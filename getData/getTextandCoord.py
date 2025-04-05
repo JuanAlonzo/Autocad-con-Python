@@ -3,18 +3,16 @@ from pyautocad import Autocad
 acad = Autocad()
 acad.prompt("Iniciando script...\n")
 
-welcome_message = f"""
+print(f"""
 Nombre del archivo: {acad.doc.Name}
 {'*' * 80}
 Bienvenido al programa de extracción de texto y coordenadas.
 Este programa extrae el texto y las coordenadas "X, Y" de 
-objetos en AutoCAD.Asegúrate de tener la capa correcta seleccionada 
+objetos en AutoCAD. Asegúrate de tener la capa correcta seleccionada 
 y de que los objetos sean de tipo texto.
 Recuerda que el programa no dibuja nada, solo extrae información.
 """
-
-print(f"{welcome_message}\n")
-# Capa de interés que contenga los objetos de texto
+)
 
 # Obtiene la lista de todas las capas disponibles
 available_layers = [layer.Name for layer in acad.doc.Layers]

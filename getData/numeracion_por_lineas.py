@@ -39,7 +39,33 @@ while True:
         break
     else:
         print(f"Error: {error_message}")
-        print(f"Capas disponibles: {', '.join(layers_disponibles)}")
+        print(f"Capas disponibles: {'\n'.join(layers_disponibles)}")
+
+# Guardamos las capas adicionales solicitadas
+capas_adicionales = []
+
+# Solicitamos y validamos si desea agregar capas adicionales
+while True:
+    agregar_capa = input(
+        "¿Deseas agregar otra capa adicional para buscar bloques? (si/no): ").lower()
+
+    if agregar_capa in ["NO", "No", "no", "n"]:
+        break
+    elif agregar_capa in ["SI", "Si", "si", "s", "sí"]:
+        capa_adicional = input("Ingresa el nombre de la capa adicional: ")
+        is_valid, error_message = validate_layer(capa_adicional)
+
+        if is_valid:
+            if capa_adicional != layer_name_bloques and capa_adicional not in capas_adicionales:
+                capas_adicionales.append(capa_adicional)
+                print(f"Capa '{capa_adicional}' agregada correctamente.")
+            else:
+                print("Esta capa ya ha sido incluida.")
+        else:
+            print(f"Error: {error_message}")
+            print(f"Capas disponibles: {'\n'.join(layers_disponibles)}")
+    else:
+        print("Por favor, responde 'si' o 'no'.")
 
 while True:
     layer_name_lineas = input(
@@ -50,7 +76,7 @@ while True:
         break
     else:
         print(f"Error: {error_message}")
-        print(f"Capas disponibles: {', '.join(layers_disponibles)}")
+        print(f"Capas disponibles: {'\n'.join(layers_disponibles)}")
 
 print(f"""\n
 Opciones de ordenamiento:
@@ -64,12 +90,16 @@ Opciones de ordenamiento:
 
 orden = input("\nEscoge el tipo de ordenamiento o salir del programa (1-6): ")
 
+if orden == "6":
+    print("Saliendo del programa...")
+    exit()
+
 # Recolectamos todos los bloques primero sin dibujar nada
 bloques = []
 
 for obj in acad.model:
     try:
-        if obj.Layer == layer_name_bloques and obj.ObjectName == "AcDbBlockReference":
+        if (obj.Layer == layer_name_bloques or obj.Layer in capas_adicionales) and obj.ObjectName == "AcDbBlockReference":
             x, y = obj.InsertionPoint[:2]
             bloques.append((x, y))
     except Exception as e:
@@ -190,10 +220,6 @@ elif orden == "5":
         bloques_ordenados.extend(bloques)
         bloques = bloques_ordenados
 
-elif orden == "6":
-    print("Saliendo del programa...")
-    exit()
-
 # Ahora dibujamos numeración en los bloques ya ordenados
 coordenadas = []
 count = 1
@@ -225,8 +251,12 @@ if len(coordenadas) > 1 and orden != "5":
         linea.Color = 1  # Rojo
 
 # Se muestran las coordenadas ordenadas
-print(
-    f"\nCoordenadas ordenadas de los bloques en la capa {layer_name_bloques}:")
+if capas_adicionales:
+    print(
+        f"\nCoordenadas ordenadas de los bloques en las capas {layer_name_bloques} y {', '.join(capas_adicionales)}:")
+else:
+    print(
+        f"\nCoordenadas ordenadas de los bloques en la capa {layer_name_bloques}:")
 for i, (x, y) in enumerate(coordenadas, 1):
     print(f"{i}. X: {x:.2f}, Y: {y:.2f}")
 print(f"\nTotal de bloques procesados: {len(coordenadas)}")

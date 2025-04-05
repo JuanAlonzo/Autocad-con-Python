@@ -6,16 +6,17 @@ def initialize_autocad():
     """Initialize AutoCAD connection and display welcome message."""
     acad = Autocad()
     welcome_message = f"""
-    Nombre del archivo: {acad.doc.Name}
-    {'*' * 80}
-    Bienvenido al programa de numeración de bloques en AutoCAD.
-    Este script permite numerar bloques en función de varias opciones de ordenamiento.
-    Puedes elegir entre ordenar por coordenadas, distancia desde un punto de referencia, 
-    o seguir un trayecto definido por líneas. Elige la opción que mejor se adapte a tus necesidades.
-    Asegurate de definir una "capa" para los bloques y otro para las líneas del trayecto.
-    Asegúrate de que los bloques estén en la capa correcta y que las líneas de trayecto estén definidas correctamente. Si no se encuentran líneas de trayecto, el script utilizará el método de "Ruta óptima" como alternativa.
-    Una vez completado, el script mostrará las coordenadas ordenadas de los bloques y los numerará en el dibujo.
-    """
+Nombre del archivo: {acad.doc.Name}
+{'*' * 80}
+Bienvenido al programa de numeración de bloques en AutoCAD.
+Este script permite numerar bloques en función de varias opciones de ordenamiento.
+Puedes elegir entre ordenar por coordenadas, distancia desde un punto de referencia, 
+o seguir un trayecto definido por líneas. 
+Elige la opción que mejor se adapte a tusnecesidades.
+Asegurate de definir una "capa" para los bloques y otro para las líneas del trayecto.
+Asegúrate de que los bloques estén en la capa correcta y que las líneas de trayecto esténdefinidas correctamente. Si no se encuentran líneas de trayecto, el script utilizará elmétodo de "Ruta óptima" como alternativa.
+Una vez completado, el script mostrará las coordenadas ordenadas de los bloques y losnumerará en el dibujo.
+"""
     print(f"{welcome_message}\n")
     return acad
 
@@ -34,17 +35,52 @@ def validate_and_select_layer(prompt, layers_disponibles):
         elif layer_name not in layers_disponibles:
             print(
                 f"Error: La capa '{layer_name}' no existe en el documento actual.")
-            print(f"Capas disponibles: {', '.join(layers_disponibles)}")
+            print(f"Capas disponibles: {'\n'.join(layers_disponibles)}")
         else:
             return layer_name
 
 
-def collect_blocks(acad, layer_name):
-    """Collect all blocks from the specified layer."""
+def get_additional_layers(layers_disponibles, primary_layer):
+    """Prompt user to add additional layers for block collection."""
+    capas_adicionales = []
+
+    while True:
+        agregar_capa = input(
+            "¿Deseas agregar otra capa adicional para buscar bloques? (si/no): ").lower()
+
+        if agregar_capa in ["no", "n"]:
+            break
+        elif agregar_capa in ["si", "s", "sí"]:
+            capa_adicional = input("Ingresa el nombre de la capa adicional: ")
+
+            if not capa_adicional.strip():
+                print("Error: El nombre de la capa no puede estar vacío.")
+            elif capa_adicional not in layers_disponibles:
+                print(
+                    f"Error: La capa '{capa_adicional}' no existe en el documento actual.")
+                print(f"Capas disponibles: {', '.join(layers_disponibles)}")
+            elif capa_adicional == primary_layer or capa_adicional in capas_adicionales:
+                print("Esta capa ya ha sido incluida.")
+            else:
+                capas_adicionales.append(capa_adicional)
+                print(f"Capa '{capa_adicional}' agregada correctamente.")
+        else:
+            print("Por favor, responde 'si' o 'no'.")
+
+    return capas_adicionales
+
+
+def collect_blocks(acad, layer_name, additional_layers=None):
+    """Collect all blocks from the specified layers."""
     blocks = []
+    layers_to_check = [layer_name]
+
+    if additional_layers:
+        layers_to_check.extend(additional_layers)
+
     for obj in acad.model:
         try:
-            if obj.Layer == layer_name and obj.ObjectName == "AcDbBlockReference":
+            if obj.Layer in layers_to_check and obj.ObjectName == "AcDbBlockReference":
                 x, y = obj.InsertionPoint[:2]
                 blocks.append((x, y))
         except Exception as e:
@@ -209,11 +245,18 @@ def draw_connecting_lines(acad, coordinates, is_path_ordering=False):
         line.Color = 1  # Red
 
 
-def print_results(coordinates, layer_name):
+def print_results(coordinates, primary_layer, additional_layers=None):
     """Print the ordered coordinates of the blocks."""
-    print(f"\nCoordenadas ordenadas de los bloques en la capa {layer_name}:")
+    if additional_layers:
+        print(
+            f"\nCoordenadas ordenadas de los bloques en las capas {primary_layer} y {', '.join(additional_layers)}:")
+    else:
+        print(
+            f"\nCoordenadas ordenadas de los bloques en la capa {primary_layer}:")
+    print("-" * 50)
     for i, (x, y) in enumerate(coordinates, 1):
-        print(f"{i}. X: {x:.2f}, Y: {y:.2f}")
+        print(f"{i}. X: {x:.4f}, Y: {y:.4f}")
+    print("-" * 50)
     print(f"\nTotal de bloques procesados: {len(coordinates)}")
 
 
@@ -226,6 +269,10 @@ def main():
         "Ingresa el nombre de la capa 'postes' a enumerar: ",
         layers_disponibles
     )
+
+    # Get additional layers
+    capas_adicionales = get_additional_layers(
+        layers_disponibles, layer_name_bloques)
 
     layer_name_lineas = validate_and_select_layer(
         "Ingresa el nombre de la capa con las líneas del trayecto: ",
@@ -250,7 +297,7 @@ def main():
         return
 
     # Collect all blocks first
-    bloques = collect_blocks(acad, layer_name_bloques)
+    bloques = collect_blocks(acad, layer_name_bloques, capas_adicionales)
 
     # Apply selected sorting method
     is_path_ordering = False
@@ -283,7 +330,7 @@ def main():
     # Draw numbering and visualize results
     coordenadas = draw_numbering(acad, bloques)
     draw_connecting_lines(acad, coordenadas, is_path_ordering)
-    print_results(coordenadas, layer_name_bloques)
+    print_results(coordenadas, layer_name_bloques, capas_adicionales)
 
 
 if __name__ == "__main__":

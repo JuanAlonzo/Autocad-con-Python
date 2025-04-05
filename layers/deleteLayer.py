@@ -16,7 +16,13 @@ def list_and_delete_layers():
     for layer in layers:
         print(f"- {layer.Name}")
 
-    layer_to_delete = input("Selecciona la capa a eliminar: ")
+    layer_to_delete = input("Selecciona la capa a eliminar (escribe 'salir' para finalizar): ")
+    
+    # Opción para salir del programa
+    if layer_to_delete.lower() == "salir":
+        print("Finalizando el programa...")
+        return
+        
     layer_found = False
     for layer in layers:
         if layer.Name == layer_to_delete:
