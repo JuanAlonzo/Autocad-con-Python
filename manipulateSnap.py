@@ -11,25 +11,13 @@ def toggle_all_osnaps(acad, enable=True):
     :param enable: Boolean to enable or disable object snaps.
     """
     if enable:
-        acad.doc.SetVariable("OSMODE", 32767)
+        acad.doc.SetVariable("OSMODE", 16383)
         acad.doc.SetVariable("AUTOSNAP", 63)
         acad.prompt("All object snaps are enabled.")
     else:
         acad.doc.SetVariable("OSMODE", 0)
         acad.doc.SetVariable("AUTOSNAP", 0)
         acad.prompt("All object snaps are disabled.")
-
-# Alternativa para activar/desactivar el interruptor principal de OSNAP (F3)
-
-
-def toggle_osnap_f3(acad, enable=True):
-    """Activa o desactiva el interruptor principal de OSNAP (F3)."""
-    if enable:
-        acad.doc.SendCommand("_OSNAP ON\n")
-        acad.prompt("Object Snap turned ON (F3).\n")
-    else:
-        acad.doc.SendCommand("_OSNAP OFF\n")
-        acad.prompt("Object Snap turned OFF (F3).\n")
 
 
 def set_custom_osnaps(acad, osnap_sum):
@@ -69,23 +57,33 @@ def osnap_manager(acad):
     choice = input("Selecciona una opción: ")
 
     if choice == "1":
-        # toggle_all_osnaps(acad, True)
-        toggle_osnap_f3(acad, True)
+        toggle_all_osnaps(acad, True)
+        # toggle_osnap_f3(acad, True)
     elif choice == "2":
-        # toggle_all_osnaps(acad, False)
-        toggle_osnap_f3(acad, False)
+        toggle_all_osnaps(acad, False)
+        # toggle_osnap_f3(acad, False)
     elif choice == "3":
         print("\nSelecciona los OSNAP que deseas activar:")
-        print("1. ENDpoint (1)")
-        print("2. MIDpoint (2)")
-        print("3. CENter (4)")
-        print("4. INTersection (32)")
-        print("5. PERpendicular (128)")
-        print("6. NEArest (512)")
+        print("01. ENDpoint (1)")
+        print("02. MIDpoint (2)")
+        print("03. CENter (4)")
+        print("04. GEometric Center(1024)")
+        print("05. Node(8)")
+        print("06. QUAdrant(16)")
+        print("07. INTersection (32)")
+        print("08. EXTension (4096)")
+        print("09. INSertion (64)")
+        print("10. PERpendicular (128)")
+        print("11. TANgent (256)")
+        print("12. NEArest (512)")
+        print("13. AParent Intersection (2048)")
+        print("14. PARallel (8192)")
+        # print("15. All sellected (16383)")
 
         selections = input("Ingresa los números separados por comas: ")
         osnap_values = {
-            "1": 1, "2": 2, "3": 4, "4": 32, "5": 128, "6": 512
+            "1": 1, "2": 2, "3": 4, "4": 1024, "5": 8, "6": 16, "7": 32, "8": 4096,
+            "9": 64, "10": 128, "11": 256, "12": 512, "13": 2048, "14": 8192
         }
 
         total = 0
@@ -123,10 +121,10 @@ def main():
         if option == "1":
             osnap_manager(acad)
         elif option == "2":
-            print("Saliendo del programa...")
+            print("\nSaliendo del programa...")
             break
         else:
-            print("Opción no válida. Inténtalo de nuevo.")
+            print("\nOpción no válida. Inténtalo de nuevo.")
 
 
 if __name__ == "__main__":
