@@ -1,4 +1,9 @@
 from pyautocad import Autocad
+from colorama import init, Fore, Style, just_fix_windows_console
+from termcolor import colored
+
+just_fix_windows_console()
+init()
 
 
 def is_layer_used(acad, layer_name):
@@ -16,13 +21,14 @@ def list_and_delete_layers():
     for layer in layers:
         print(f"- {layer.Name}")
 
-    layer_to_delete = input("Selecciona la capa a eliminar (escribe 'salir' para finalizar): ")
-    
+    layer_to_delete = input(
+        "Selecciona la capa a eliminar (escribe 'salir' para finalizar): ")
+
     # Opción para salir del programa
     if layer_to_delete.lower() == "salir":
         print("Finalizando el programa...")
         return
-        
+
     layer_found = False
     for layer in layers:
         if layer.Name == layer_to_delete:

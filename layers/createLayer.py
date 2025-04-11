@@ -1,4 +1,9 @@
 from pyautocad import Autocad
+from colorama import init, Fore, Style, just_fix_windows_console
+from termcolor import colored
+
+just_fix_windows_console()
+init()
 
 
 def print_color_options(color_dict):
@@ -13,14 +18,14 @@ def get_valid_layer_name(cad_doc):
     """Solicita un nombre y valida si la capa ya existe."""
     while True:
         layer_name = input(
-            "Introduce el nombre de la capa a crear (o 'salir' para terminar): ")
+            "\nIntroduce el nombre de la capa a crear (o 'salir' para terminar): ")
 
         if layer_name.lower() == 'salir':
-            print("Saliendo del programa.")
+            print("\nSaliendo del programa...")
             return None
 
         if not layer_name or layer_name.isspace():
-            print("El nombre de la capa no puede estar vacío.")
+            print(colored("El nombre de la capa no puede estar vacío.", 'red'))
             continue
 
         for layer in cad_doc.Layers:

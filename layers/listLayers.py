@@ -1,9 +1,14 @@
 from pyautocad import Autocad
 import win32com.client  # pip install pywin32
+from colorama import init, Fore, Style, just_fix_windows_console
+from termcolor import colored
+
+just_fix_windows_console()
+init()
 
 # Inicializar AutoCAD
 cad = Autocad()
-cad.prompt("Conectado a AutoCAD\n")
+cad.prompt(f"{Fore.GREEN}Conectado a AutoCAD{Style.RESET_ALL}\n")
 
 # Obtener todas las capas
 layers = cad.doc.Layers
@@ -22,17 +27,17 @@ for obj in all_objects:
         pass
 
 # Mostrar resultados
-print("\nCapas utilizadas:")
+print(f"\n{Fore.BLUE}Capas utilizadas:")
 print("-" * 35)
 for layer_name in sorted(used_layers):
     print(f"- {layer_name}")
 
-print("\nCapas sin utilizar:")
+print(f"\n{Fore.YELLOW}Capas sin utilizar:")
 print("-" * 35)
 for layer_name in sorted(set(layer_names) - used_layers):
     print(f"- {layer_name}")
 
-print("\nTotal de capas:")
+print(f"\n{Fore.WHITE}Total de capas:")
 print("*" * 35)
 print(f"- Capas en uso: {len(used_layers)}")
 print(f"- Capas sin uso: {len(set(layer_names) - used_layers)}")
