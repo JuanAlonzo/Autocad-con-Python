@@ -1,0 +1,5 @@
+pyautocad==0.2.0
+colorama==0.4.6
+termcolor==2.3.0
+comtypes==1.2.0
+pywin32==306

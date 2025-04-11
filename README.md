@@ -7,13 +7,6 @@ Las herramientas fueron diseñadas para facilitar la gestión de capas, numeraci
 
 El proyecto está organizado en los siguientes directorios:
 
-### 📂 drawing
-
-Scripts para automatizar el dibujo de elementos en AutoCAD:
-
-- `drawCircleNumber.py`: Dibuja círculos numerados en coordenadas específicas.
-- `drawLine.py`: Crea líneas entre coordenadas especificadas.
-
 ### 📂 getData
 
 Herramientas para extraer información de dibujos existentes:
@@ -27,15 +20,22 @@ Herramientas para extraer información de dibujos existentes:
 
 Funciones para gestionar capas en AutoCAD:
 
-- `createLayer.py`: Crea nuevas capas con colores específicos.
-- `deleteLayer.py`: Elimina capas no utilizadas.
-- `listLayers.py`: Lista todas las capas existentes en el dibujo.
+- `layersCreate.py`: Crea nuevas capas con colores específicos.
+- `layersDelete.py`: Elimina capas que no estes utilizando.
+- `layersList.py`: Lista las capas existentes tanto en uso como las que no en el dibujo.
+
+### 📂 utilities
+
+Aqui se almacenan la mayoria de funciones que se encuentran en los principales scripts.
+
+- `acad_common.py`: Funciones como inicializar, obtener datos o validar entradas.
+- `acad_layers.py`: Todo lo relacionado con los scripts para manipular layers del dibujo.
 
 ## Scripts Principales
 
 ### numeracionxTrayectoOptimized.py
 
-Script optimizado de `numeracion_por_lineas.py` que permite numerar bloques de AutoCAD (como postes) siguiendo diferentes criterios:
+Script optimizado de `numeraciondeBloques.py` que permite numerar bloques de AutoCAD (como postes) siguiendo diferentes criterios:
 
 - Ordenación por coordenada X o Y
 - Ordenación por distancia desde un punto de referencia
@@ -44,13 +44,13 @@ Script optimizado de `numeracion_por_lineas.py` que permite numerar bloques de A
 
 ### getLayerOptimized.py
 
-Versión optimizada de `getLayerbyNumber.py` para extraer elementos de capas específicas y asociarlos con números de otra capa, utilizando un enfoque modular y funciones reutilizables.
+Versión optimizada de `obtenerCapaSegunNumeracion.py` para extraer elementos de capas específicas y asociarlos con números de otra capa, utilizando un enfoque modular y funciones reutilizables.
 
 ## Requisitos
 
 - AutoCAD instalado
 - Python 3.6 o superior
-- Biblioteca `pyautocad` (`pip install pyautocad`)
+- Bibliotecas en archivo `requirements.txt` (`pip install **`)
 
 ## Uso
 
