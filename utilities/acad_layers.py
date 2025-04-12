@@ -1,7 +1,17 @@
-from pyautocad import Autocad, APoint
 from colorama import Fore, Style
 from termcolor import colored
-from .acad_common import initialized_autocad, get_available_layers
+
+color_map = {
+    "Rojo": "red",
+    "Amarillo": "yellow",
+    "Verde": "green",
+    "Cian": "cyan",
+    "Azul": "blue",
+    "Magenta": "magenta",
+    "Blanco": "white",
+    "Gris": "grey",
+    "Negro": "grey"
+}
 
 
 def get_layer_color_dict():
@@ -19,25 +29,35 @@ def get_layer_color_dict():
     }
 
 
-def print_color_options(color_dict=None):
+def print_color_options(color_dict=None, use_colors=True):
     """Muestra los colores disponibles con sus códigos."""
     if color_dict is None:
         color_dict = get_layer_color_dict()
 
     print("\nColores disponibles:")
     print("-"*20)
-    for code, color in color_dict.items():
-        print(f"{code}: {color}")
+    for code, color_name in color_dict.items():
+        if use_colors and color_name in color_map:
+            color = color_map[color_name]
+            code_colored = colored(code, color, attrs=["bold"])
+            separator_colored = colored(":", color, attrs=["bold"])
+            name_colored = colored(color_name, color, attrs=["bold"])
+        else:
+            code_colored = code
+            separator_colored = colored(":", 'white', attrs=['bold'])
+            name_colored = color_name
+        print(f"{code_colored}{separator_colored}{name_colored}")
 
 
 def get_valid_layer_name(cad_doc):
     """Solicita un nombre y valida si la capa ya existe."""
     while True:
         layer_name = input(colored(
-            "\nIntroduce el nombre de la capa a crear (o 'salir' para terminar): ", 'white', attrs=['bold']))
+            "\nIntroduce el nombre de la capa a crear (o 'salir' para terminar): ", 'white', attrs=['bold'])).strip()
 
         if layer_name.lower() == 'salir':
-            print(colored("\nSaliendo del programa...", 'yellow'))
+            print(colored("\nSaliendo del programa...",
+                  'yellow', attrs=['bold']))
             return None
 
         if not layer_name or layer_name.isspace():
@@ -57,7 +77,7 @@ def get_valid_color():
     """Solicita y valida un código de color entre 1 y 255."""
     while True:
         color = input(
-            colored("Introduce el color de la capa (1-255): ", 'white', attrs=['bold']))
+            colored("Introduce el color de la capa (1-255): ", 'white', attrs=['bold'])).strip()
         try:
             color_num = int(color)
             if 1 <= color_num <= 255:
@@ -77,7 +97,7 @@ def create_layer(cad_doc, layer_name, color_num, color_dict=None):
     new_layer.Color = color_num
     color_name = color_dict.get(str(color_num), "Color no definido")
     print(colored(
-        f'La capa "{layer_name}" ha sido creada con el color {color_num} ({color_name}).', 'green'))
+        f'La capa "{layer_name}" ha sido creada con el color {color_num} ({color_name}).', 'green', attrs=['bold']))
     return new_layer
 
 

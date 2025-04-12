@@ -1,60 +1,37 @@
-# from pyautocad import Autocad
-from colorama import init, Fore, Style, just_fix_windows_console
 from termcolor import colored
-from utilities.acad_common import initialized_autocad, get_available_layers, get_valid_layer_input
-from utilities.acad_layers import is_layer_used
-
-just_fix_windows_console()
-
-init()
+from utilities.acad_common import initialized_autocad, get_available_layers, get_valid_layer_input, delete_layer
 
 
-def delete_layer(acad, layer_name, layers_disponibles):
-    if layer_name.lower() == "salir":
-        print(colored("Finalizando el programa...", 'yellow', attrs=['bold']))
-        return True
-
-    if layer_name not in layers_disponibles:
-        print(colored(f"Error: La capa '{layer_name}' no existe.", 'red'))
-        return False
-
-    try:
-        if is_layer_used(acad, layer_name):
-            print(colored(
-                f"La capa '{layer_name}' está en uso y no puede ser eliminada.", 'red'))
-            return False
-        else:
-            acad.doc.Layers.Item(layer_name).Delete()
-            print(colored(
-                f"La capa '{layer_name}' se eliminó satisfactoriamente.", 'green'))
-            return True
-    except Exception as e:
-        print(
-            colored(f"No se puede eliminar la capa '{layer_name}': {e}", 'red'))
-        return False
-
-
-def list_and_delete_layers():
+def main():
+    """Función principal para listar y eliminar capas en AutoCAD."""
     acad = initialized_autocad(
         colored("Programa para eliminar capas en AutoCAD", 'cyan', attrs=['bold']))
     if not acad:
+        print(colored(
+            "\nNo se puede continuar sin una conexión a AutoCAD.", 'red', attrs=['bold']))
+        input(colored("Presione Enter para salir...", 'white', attrs=['bold']))
         return
-
-        # Lista las capas existentes
-    layers_disponibles = get_available_layers(acad)
-    print(colored("CAPAS EXISTENTES:", 'blue', attrs=['bold']))
-    for layer in layers_disponibles:
-        print(colored(f"- {layer}", 'blue'))
-
     while True:
-        layer_to_delete = input(
-            "\nSelecciona la capa a eliminar (escribe 'salir' para finalizar): ")
+        try:
+            layers_disponibles = get_available_layers(acad)
+            layer_to_delete = get_valid_layer_input(
+                "\nSelecciona la capa a eliminar", layers_disponibles)
+            if layer_to_delete is None:
+                print(colored("Saliendo del programa...",
+                              'yellow', attrs=['bold']))
+                break
 
-        delete_layer(acad, layer_to_delete, layers_disponibles)
-
-        if layer_to_delete.lower() == "salir":
+            delete_layer(acad, layer_to_delete, layers_disponibles)
+        except KeyboardInterrupt:
+            print(colored("\nOperación cancelada por el usuario.",
+                  'yellow', attrs=['bold']))
+            break
+        except Exception as e:
+            print(colored(f"Error inesperado: {e}", 'red'))
+            input(colored(
+                "Presione Enter para continuar o Ctrl+C para salir...", 'white', attrs=['bold']))
             break
 
 
 if __name__ == "__main__":
-    list_and_delete_layers()
+    main()
