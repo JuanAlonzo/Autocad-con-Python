@@ -1,21 +1,17 @@
-from colorama import Fore
 from termcolor import colored
-from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
-from utilities.acad_common import initialized_autocad
+from utilities.acad_common import console, initialized_autocad, display_message
 from utilities.acad_layers import list_layers
-
-console = Console()
 
 
 def main():
     acad = initialized_autocad(
         colored("Programa para listar capas en AutoCAD", 'cyan', attrs=['bold']))
     if not acad:
-        print(colored(
-            "\nNo se puede continuar sin una conexión a AutoCAD.", 'red', attrs=['bold']))
+        display_message(
+            "\nNo se puede continuar sin una conexión a AutoCAD.", style='error')
         input(colored("Presione Enter para salir...", 'white', attrs=['bold']))
         return
 
@@ -25,34 +21,36 @@ def main():
             layers_info = list_layers(acad)
             console.print(Panel(
                 Text("LISTADO DE CAPAS EN AUTOCAD", style="bold white"),
-                border_style="cyan"
+                border_style="white"
             ))
 
             used_table = Table(title="Capas en Uso",
                                show_header=True,
                                header_style="bold blue",
                                border_style="blue")
-            used_table.add_column("#", style="dim", width=4)
+            used_table.add_column("#", style="blue", width=4)
             used_table.add_column("Nombre de Capa", style="blue")
+
             unused_table = Table(title="Capas sin Usar",
                                  show_header=True,
                                  header_style="bold yellow",
                                  border_style="yellow")
-            unused_table.add_column("#", style="dim", width=4)
+            unused_table.add_column("#", style="yellow", width=4)
             unused_table.add_column("Nombre de Capa", style="yellow")
 
             for i, layer_name in enumerate(sorted(layers_info["used"]), 1):
-                used_table.addrow(str(i), layer_name)
+                used_table.add_row(str(i), layer_name)
 
             for i, layer_name in enumerate(sorted(layers_info["unused"]), 1):
-                unused_table.addrow(str(i), layer_name)
+                unused_table.add_row(str(i), layer_name)
 
+            # Mostrar las tablas en la consola
             console.print(used_table)
             console.print(unused_table)
 
             summary_table = Table(show_header=False, box=None)
             summary_table.add_column(style="bold white")
-            summary_table.add_column(style="cyan")
+            summary_table.add_column(style="bold white")
 
             summary_table.add_row("Total de capas en uso:", str(
                 layers_info['counts']['used']))
@@ -67,21 +65,15 @@ def main():
                 title="Resumen",
                 border_style="white"
             ))
-
-            # print(colored(f"\nTotal de capas:", 'white', attrs=['bold']))
-            # print("*" * 35)
-            # print(f"- Capas en uso: {layers_info['counts']['used']}")
-            # print(f"- Capas sin uso: {layers_info['counts']['unused']}")
-            # print(f"- Total: {layers_info['counts']['total']}")
             break
         except KeyboardInterrupt:
-            print(colored("\nOperación cancelada por el usuario.",
-                          'yellow', attrs=['bold']))
+            display_message(
+                "\nOperación cancelada por el usuario.", style='warning')
             break
         except Exception as e:
-            print(colored(f"Error inesperado: {e}", 'red'))
-            input(colored(
-                "Presione Enter para continuar o Ctrl+C para salir...", 'white', attrs=['bold']))
+            display_message(f"Error inesperado: {e}", style='error')
+            input(display_message(
+                "Presione Enter para continuar o Ctrl+C para salir...", style='input'))
             break
 
 

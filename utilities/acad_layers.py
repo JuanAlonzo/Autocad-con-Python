@@ -1,30 +1,24 @@
 from termcolor import colored
-from rich import print as rprint
-from utilities.acad_common import console, progress, validate_new_layer_name, is_layer_used, get_layer_color_dict
+from rich import print
+from utilities.acad_common import console, progress, is_layer_used, get_layer_color_dict, validate_layer_name, display_message
 
 
 def get_valid_layer_name(cad_doc):
-    """Solicita un nombre y valida si la capa ya existe."""
+    """Solicita un nombre de capa al usuario y validar si ya existe."""
     while True:
         layer_name = input(colored(
             "\nIntroduce el nombre de la capa a crear (o 'salir' para terminar): ", 'white', attrs=['bold'])).strip()
 
         if layer_name.lower() == 'salir':
-            print(colored("\nSaliendo del programa...",
-                  'yellow', attrs=['bold']))
+            display_message("\nSaliendo del programa...", style='warning')
             return None
 
-        if not layer_name or layer_name.isspace():
-            print(colored("El nombre de la capa no puede estar vacío.", 'red'))
-            continue
+        is_valid, error = validate_layer_name(
+            layer_name, cad_doc=cad_doc, should_exist=False)
 
-        for layer in cad_doc.Layers:
-            if layer.Name == layer_name:
-                print(
-                    colored(f'Error: La capa "{layer_name}" ya existe.', 'white', 'on_red'))
-                break
-        else:
+        if is_valid:
             return layer_name
+        print(error)
 
 
 def get_valid_color():
@@ -37,9 +31,11 @@ def get_valid_color():
             if 1 <= color_num <= 255:
                 return color_num
             else:
-                print(colored("El número de color debe estar entre 1 y 255.", 'red'))
+                display_message(
+                    "El número de color debe estar entre 1 y 255.", style='error')
         except ValueError:
-            print(colored("Por favor, introduce un número válido para el color.", 'red'))
+            display_message(
+                "Por favor, introduce un número válido para el color.", style='error')
 
 
 def create_layer(cad_doc, layer_name, color_num, color_dict=None):
@@ -51,8 +47,8 @@ def create_layer(cad_doc, layer_name, color_num, color_dict=None):
         new_layer = cad_doc.Layers.Add(layer_name)
         new_layer.Color = color_num
         color_name = color_dict.get(str(color_num), "Color no definido")
-        print(colored(
-            f'La capa "{layer_name}" ha sido creada con el color {color_num} ({color_name}).', 'green', attrs=['bold']))
+        display_message(
+            f'La capa "{layer_name}" ha sido creada con el color {color_num} ({color_name}).', style='success')
         return new_layer
     except Exception as e:
         console.error(
@@ -63,14 +59,15 @@ def create_layer(cad_doc, layer_name, color_num, color_dict=None):
 def delete_layer(acad, layer_name, layers_disponibles):
     """Elimina una capa de AutoCAD si no está en uso.
     Solicita confirmación al usuario antes de eliminarla."""
-    if layer_name not in layers_disponibles:
-        print(colored(f"Error: La capa '{layer_name}' no existe.", 'red'))
+    is_valid, error = validate_layer_name(layer_name, layers_disponibles)
+    if not is_valid:
+        print(error)
         return False
 
     try:
         if is_layer_used(acad, layer_name):
-            print(colored(
-                f"La capa '{layer_name}' está en uso y no puede ser eliminada.", 'red'))
+            display_message(
+                f"La capa '{layer_name}' está en uso y no puede ser eliminada.", style='error')
             return False
 
         confirm = input(colored(
@@ -78,16 +75,17 @@ def delete_layer(acad, layer_name, layers_disponibles):
             'yellow', attrs=['bold'])).lower().strip() == 's'
 
         if not confirm:
-            print(colored("Operación cancelada por el usuario.", 'yellow'))
+            display_message(
+                "Operación cancelada por el usuario.", style='warning')
             return False
 
         acad.doc.Layers.Item(layer_name).Delete()
-        print(colored(
-            f"La capa '{layer_name}' se eliminó satisfactoriamente.", 'green'))
+        display_message(
+            f"La capa '{layer_name}' se eliminó satisfactoriamente.", style='success')
         return True
     except Exception as e:
-        print(
-            colored(f"No se puede eliminar la capa '{layer_name}': {e}", 'red'))
+        display_message(
+            f"No se puede eliminar la capa '{layer_name}': {e}", style='error')
         return False
 
 
