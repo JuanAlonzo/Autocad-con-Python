@@ -12,7 +12,8 @@ def main():
     if not acad:
         display_message(
             "\nNo se puede continuar sin una conexión a AutoCAD.", style='error')
-        input(colored("Presione Enter para salir...", 'white', attrs=['bold']))
+        display_message("Presione Enter para salir...",
+                        style='input', use_rich=True)
         return
 
     while True:
@@ -72,8 +73,8 @@ def main():
             break
         except Exception as e:
             display_message(f"Error inesperado: {e}", style='error')
-            input(display_message(
-                "Presione Enter para continuar o Ctrl+C para salir...", style='input'))
+            display_message(
+                "Presione Enter para continuar o Ctrl+C para salir...", style='input', use_rich=True)
             break
 
 

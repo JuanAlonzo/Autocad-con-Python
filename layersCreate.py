@@ -10,7 +10,8 @@ def main():
     if not cad:
         display_message(
             "\nNo se puede continuar sin una conexión a AutoCAD.", style='error')
-        display_message("Presione Enter para salir...", style='input')
+        display_message("Presione Enter para salir...",
+                        style='input', use_rich=True)
         return
     while True:
         try:
@@ -27,8 +28,9 @@ def main():
                 break
             create_layer(cad.doc, layer_name, color_num, color_dict)
 
-            continuar = input(colored(
-                "\n¿Desea crear otra capa? (s/n): ", 'cyan')).strip().lower()
+            continuar = display_message(
+                "\n¿Desea crear otra capa? (s/n): ",
+                style='init', use_rich=True).strip().lower()
             if continuar != 's':
                 display_message("Saliendo del programa...", style='warning')
                 break
@@ -38,8 +40,8 @@ def main():
             break
         except Exception as e:
             display_message(f"Error inesperado: {e}", style='error')
-            input(display_message(
-                "Presione Enter para continuar o Ctrl+C para salir...", style='input'))
+            display_message(
+                "Presione Enter para continuar o Ctrl+C para salir...", style='input', use_rich=True)
             break
 
 

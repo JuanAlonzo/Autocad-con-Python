@@ -1,4 +1,3 @@
-from termcolor import colored
 from utilities.acad_layers import delete_layer
 from utilities.acad_common import initialized_autocad, get_available_layers, get_valid_layer_input, display_available_layers, display_message
 
@@ -10,7 +9,8 @@ def main():
     if not acad:
         display_message(
             "\nNo se puede continuar sin una conexión a AutoCAD.", style='error')
-        input(display_message("Presione Enter para salir...", style='input'))
+        display_message("Presione Enter para salir...",
+                        style='input', use_rich=True)
         return
 
     try:
@@ -41,8 +41,8 @@ def main():
                 break
             except Exception as e:
                 display_message(f"Error inesperado: {e}", style='error')
-                input(display_message(
-                    "Presione Enter para continuar o Ctrl+C para salir...", style='input'))
+                display_message(
+                    "Presione Enter para continuar o Ctrl+C para salir...", style='input', use_rich=True)
                 break
     except Exception as e:
         display_message(f"Error inesperado: {e}", style='error')

@@ -1,4 +1,3 @@
-from termcolor import colored
 from rich import print
 from utilities.acad_common import console, progress, is_layer_used, get_layer_color_dict, validate_layer_name, display_message
 
@@ -6,8 +5,8 @@ from utilities.acad_common import console, progress, is_layer_used, get_layer_co
 def get_valid_layer_name(cad_doc):
     """Solicita un nombre de capa al usuario y validar si ya existe."""
     while True:
-        layer_name = input(colored(
-            "\nIntroduce el nombre de la capa a crear (o 'salir' para terminar): ", 'white', attrs=['bold'])).strip()
+        layer_name = display_message(
+            "\nIntroduce el nombre de la capa a crear (o 'salir' para terminar): ", style='input', use_rich=True).strip()
 
         if layer_name.lower() == 'salir':
             display_message("\nSaliendo del programa...", style='warning')
@@ -24,8 +23,8 @@ def get_valid_layer_name(cad_doc):
 def get_valid_color():
     """Solicita y valida un código de color entre 1 y 255."""
     while True:
-        color = input(
-            colored("Introduce el color de la capa (1-255): ", 'white', attrs=['bold'])).strip()
+        color = display_message(
+            "Introduce el color de la capa (1-255): ", style='input', use_rich=True).strip()
         try:
             color_num = int(color)
             if 1 <= color_num <= 255:
@@ -70,9 +69,9 @@ def delete_layer(acad, layer_name, layers_disponibles):
                 f"La capa '{layer_name}' está en uso y no puede ser eliminada.", style='error')
             return False
 
-        confirm = input(colored(
+        confirm = input(display_message(
             f"¿Estás seguro de eliminar la capa '{layer_name}'? (s/n): ",
-            'yellow', attrs=['bold'])).lower().strip() == 's'
+            style='warning')).lower().strip() == 's'
 
         if not confirm:
             display_message(
