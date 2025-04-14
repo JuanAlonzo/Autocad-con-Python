@@ -1,52 +1,6 @@
-from colorama import Fore, Style
 from termcolor import colored
-
-color_map = {
-    "Rojo": "red",
-    "Amarillo": "yellow",
-    "Verde": "green",
-    "Cian": "cyan",
-    "Azul": "blue",
-    "Magenta": "magenta",
-    "Blanco": "white",
-    "Gris": "grey",
-    "Negro": "grey"
-}
-
-
-def get_layer_color_dict():
-    """Retorna un diccionario con los colores estándar de AutoCAD."""
-    return {
-        "1": "Rojo",
-        "2": "Amarillo",
-        "3": "Verde",
-        "4": "Cian",
-        "5": "Azul",
-        "6": "Magenta",
-        "7": "Blanco",
-        "8": "Gris",
-        "256": "Negro"
-    }
-
-
-def print_color_options(color_dict=None, use_colors=True):
-    """Muestra los colores disponibles con sus códigos."""
-    if color_dict is None:
-        color_dict = get_layer_color_dict()
-
-    print("\nColores disponibles:")
-    print("-"*20)
-    for code, color_name in color_dict.items():
-        if use_colors and color_name in color_map:
-            color = color_map[color_name]
-            code_colored = colored(code, color, attrs=["bold"])
-            separator_colored = colored(":", color, attrs=["bold"])
-            name_colored = colored(color_name, color, attrs=["bold"])
-        else:
-            code_colored = code
-            separator_colored = colored(":", 'white', attrs=['bold'])
-            name_colored = color_name
-        print(f"{code_colored}{separator_colored}{name_colored}")
+from rich import print as rprint
+from utilities.acad_common import console, progress, validate_new_layer_name, is_layer_used, get_layer_color_dict
 
 
 def get_valid_layer_name(cad_doc):
@@ -93,17 +47,48 @@ def create_layer(cad_doc, layer_name, color_num, color_dict=None):
     if color_dict is None:
         color_dict = get_layer_color_dict()
 
-    new_layer = cad_doc.Layers.Add(layer_name)
-    new_layer.Color = color_num
-    color_name = color_dict.get(str(color_num), "Color no definido")
-    print(colored(
-        f'La capa "{layer_name}" ha sido creada con el color {color_num} ({color_name}).', 'green', attrs=['bold']))
-    return new_layer
+    try:
+        new_layer = cad_doc.Layers.Add(layer_name)
+        new_layer.Color = color_num
+        color_name = color_dict.get(str(color_num), "Color no definido")
+        print(colored(
+            f'La capa "{layer_name}" ha sido creada con el color {color_num} ({color_name}).', 'green', attrs=['bold']))
+        return new_layer
+    except Exception as e:
+        console.error(
+            f"❌ Error al crear capa {layer_name}: {str(e)}")
+        raise
 
 
-def is_layer_used(acad, layer_name):
-    """Chequea si el layer esta siendo usado por algun objeto en el dibujo."""
-    return any(obj.Layer == layer_name for obj in acad.iter_objects(limit=1000))
+def delete_layer(acad, layer_name, layers_disponibles):
+    """Elimina una capa de AutoCAD si no está en uso.
+    Solicita confirmación al usuario antes de eliminarla."""
+    if layer_name not in layers_disponibles:
+        print(colored(f"Error: La capa '{layer_name}' no existe.", 'red'))
+        return False
+
+    try:
+        if is_layer_used(acad, layer_name):
+            print(colored(
+                f"La capa '{layer_name}' está en uso y no puede ser eliminada.", 'red'))
+            return False
+
+        confirm = input(colored(
+            f"¿Estás seguro de eliminar la capa '{layer_name}'? (s/n): ",
+            'yellow', attrs=['bold'])).lower().strip() == 's'
+
+        if not confirm:
+            print(colored("Operación cancelada por el usuario.", 'yellow'))
+            return False
+
+        acad.doc.Layers.Item(layer_name).Delete()
+        print(colored(
+            f"La capa '{layer_name}' se eliminó satisfactoriamente.", 'green'))
+        return True
+    except Exception as e:
+        print(
+            colored(f"No se puede eliminar la capa '{layer_name}': {e}", 'red'))
+        return False
 
 
 def list_layers(acad, show_unused=True, show_used=True):
@@ -114,14 +99,27 @@ def list_layers(acad, show_unused=True, show_used=True):
 
     # Verificar qué capas están en uso
     used_layers = set()
-    all_objects = acad.iter_objects()
 
-    for obj in all_objects:
-        try:
-            if hasattr(obj, "Layer"):
-                used_layers.add(obj.Layer)
-        except:
-            pass
+    # Primero contar los objetos totales para la barra de progreso
+    console.print("[yellow]Contando objetos del dibujo...[/yellow]")
+    all_objects = list(acad.iter_objects())
+    total_objects = len(all_objects)
+
+    # Usar barra de progreso de rich
+    with console.status(f"[bold green]Procesando {total_objects} objetos...") as status:
+        with progress:
+            task = progress.add_task(
+                "[cyan]Analizando capas...", total=total_objects)
+
+            for i, obj in enumerate(all_objects):
+                try:
+                    if hasattr(obj, "Layer"):
+                        used_layers.add(obj.Layer)
+                except Exception as e:
+                    console.print(
+                        f"[red]Error al procesar objeto: {str(e)}[/red]")
+
+                progress.update(task, completed=i+1)
 
     results = {
         "used": sorted(used_layers) if show_used else [],
@@ -133,5 +131,8 @@ def list_layers(acad, show_unused=True, show_used=True):
             "total": len(layer_names)
         }
     }
+
+    console.print(
+        f"[green]✓ Análisis completado: {results['counts']['used']} capas usadas, {results['counts']['unused']} sin usar[/green]")
 
     return results

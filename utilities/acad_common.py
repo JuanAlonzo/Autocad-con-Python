@@ -3,11 +3,24 @@ from colorama import init, just_fix_windows_console
 from termcolor import colored
 from rich.console import Console
 from rich.table import Table
-from utilities.acad_layers import is_layer_used
+from rich.progress import Progress
 
 init()
 just_fix_windows_console()
 console = Console()
+progress = Progress()
+
+color_map = {
+    "Rojo": "red",
+    "Amarillo": "yellow",
+    "Verde": "green",
+    "Cian": "cyan",
+    "Azul": "blue",
+    "Magenta": "magenta",
+    "Blanco": "white",
+    "Gris": "grey",
+    "Negro": "grey"
+}
 
 
 def initialized_autocad(message=None):
@@ -47,12 +60,29 @@ def get_available_layers(acad):
     return [layer.Name for layer in acad.doc.Layers]
 
 
+def is_layer_used(acad, layer_name):
+    """Chequea si el layer esta siendo usado por algun objeto en el dibujo."""
+    return any(obj.Layer == layer_name for obj in acad.iter_objects(limit=1000))
+
+
 def validate_layer(layer_name, layers_disponibles):
     """Valida si la capa existe en el documento actual."""
     if not layer_name.strip():
         return False, colored("El nombre de la capa no puede estar vacío.", 'red', attrs=['bold'])
     if layer_name not in layers_disponibles:
         return False, colored(f"La capa '{layer_name}' no existe en el documento actual.", 'red', attrs=['bold'])
+    return True, ""
+
+
+def validate_new_layer_name(cad_doc, layer_name):
+    """Valida si un nombre de capa es válido para crear una nueva capa."""
+    if not layer_name or layer_name.isspace():
+        return False, colored("El nombre de la capa no puede estar vacío.", 'red')
+
+    for layer in cad_doc.Layers:
+        if layer.Name == layer_name:
+            return False, colored(f'Error: La capa "{layer_name}" ya existe.', 'white', 'on_red')
+
     return True, ""
 
 
@@ -98,35 +128,41 @@ def get_valid_layer_input(prompt, layers, exit_keyword="salir"):
         print(f"Error: {error}")
 
 
-def delete_layer(acad, layer_name, layers_disponibles):
-    """Elimina una capa de AutoCAD si no está en uso.
-    Solicita confirmación al usuario antes de eliminarla."""
-    if layer_name not in layers_disponibles:
-        print(colored(f"Error: La capa '{layer_name}' no existe.", 'red'))
-        return False
+def get_layer_color_dict():
+    """Retorna un diccionario con los colores estándar de AutoCAD."""
+    return {
+        "1": "Rojo",
+        "2": "Amarillo",
+        "3": "Verde",
+        "4": "Cian",
+        "5": "Azul",
+        "6": "Magenta",
+        "7": "Blanco",
+        "8": "Gris",
+        "256": "Negro"
+    }
 
-    try:
-        if is_layer_used(acad, layer_name):
-            print(colored(
-                f"La capa '{layer_name}' está en uso y no puede ser eliminada.", 'red'))
-            return False
 
-        confirm = input(colored(
-            f"¿Estás seguro de eliminar la capa '{layer_name}'? (s/n): ",
-            'yellow', attrs=['bold'])).lower().strip() == 's'
+def print_color_options(color_dict=None, use_colors=True):
+    """Muestra los colores disponibles con sus códigos."""
+    if color_dict is None:
+        color_dict = get_layer_color_dict()
 
-        if not confirm:
-            print(colored("Operación cancelada por el usuario.", 'yellow'))
-            return False
+    print("\nColores disponibles:")
+    print("-"*20)
+    for code, color_name in color_dict.items():
+        if use_colors and color_name in color_map:
+            color = color_map[color_name]
+            code_colored = colored(code, color, attrs=["bold"])
+            separator_colored = colored(":", color, attrs=["bold"])
+            name_colored = colored(color_name, color, attrs=["bold"])
+        else:
+            code_colored = code
+            separator_colored = colored(":", 'white', attrs=['bold'])
+            name_colored = color_name
+        print(f"{code_colored}{separator_colored}{name_colored}")
 
-        acad.doc.Layers.Item(layer_name).Delete()
-        print(colored(
-            f"La capa '{layer_name}' se eliminó satisfactoriamente.", 'green'))
-        return True
-    except Exception as e:
-        print(
-            colored(f"No se puede eliminar la capa '{layer_name}': {e}", 'red'))
-        return False
+# Funciones de visualización
 
 
 def display_text_coordinates(data, layer_name):
