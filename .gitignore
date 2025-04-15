@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 *.pyo
 *.log
+*.csv
+*.xlsx
 
 # Entorno virtual (si usas venv)
 venv/

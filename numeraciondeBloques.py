@@ -1,29 +1,10 @@
-from pyautocad import Autocad, APoint
+from pyautocad import APoint
+from utilities.acad_common import (
+    initialized_autocad,
+    display_message,
+    get_available_layers
+)
 import math
-
-
-def initialize_autocad():
-    """Initialize AutoCAD connection and display welcome message."""
-    acad = Autocad()
-    welcome_message = f"""
-Nombre del archivo: {acad.doc.Name}
-{'*' * 80}
-Bienvenido al programa de numeración de bloques en AutoCAD.
-Este script permite numerar bloques en función de varias opciones de ordenamiento.
-Puedes elegir entre ordenar por coordenadas, distancia desde un punto de referencia, 
-o seguir un trayecto definido por líneas. 
-Elige la opción que mejor se adapte a tusnecesidades.
-Asegurate de definir una "capa" para los bloques y otro para las líneas del trayecto.
-Asegúrate de que los bloques estén en la capa correcta y que las líneas de trayecto esténdefinidas correctamente. Si no se encuentran líneas de trayecto, el script utilizará elmétodo de "Ruta óptima" como alternativa.
-Una vez completado, el script mostrará las coordenadas ordenadas de los bloques y losnumerará en el dibujo.
-"""
-    print(f"{welcome_message}\n")
-    return acad
-
-
-def get_available_layers(acad):
-    """Get list of all available layers in the document."""
-    return [layer.Name for layer in acad.doc.Layers]
 
 
 def validate_and_select_layer(prompt, layers_disponibles):
@@ -261,7 +242,22 @@ def print_results(coordinates, primary_layer, additional_layers=None):
 
 
 def main():
-    acad = initialize_autocad()
+    acad = initialized_autocad("""
+Bienvenido al programa de numeración de bloques en AutoCAD.
+Este script permite numerar bloques en función de varias opciones de ordenamiento.
+Puedes elegir entre ordenar por coordenadas, distancia desde un punto de referencia, 
+o seguir un trayecto definido por líneas. 
+Elige la opción que mejor se adapte a tusnecesidades.
+Asegurate de definir una 'capa' para los bloques y otro para las líneas del trayecto.
+Asegúrate de que los bloques estén en la capa correcta y que las líneas de trayecto esténdefinidas correctamente. Si no se encuentran líneas de trayecto, el script utilizará elmétodo de 'Ruta óptima' como alternativa.
+Una vez completado, el script mostrará las coordenadas ordenadas de los bloques y losnumerará en el dibujo.
+        """)
+    if not acad:
+        display_message(
+            "\nNo se puede continuar sin una conexión a AutoCAD.", style='error')
+        display_message("Presione Enter para salir...",
+                        style='input', use_rich=True)
+        return
     layers_disponibles = get_available_layers(acad)
 
     # Get layer names

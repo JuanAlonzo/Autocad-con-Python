@@ -3,3 +3,6 @@ colorama==0.4.6
 termcolor==2.3.0
 comtypes==1.2.0
 pywin32==306
+rich>=13.0.0
+pandas>=2.0.0
+openpyxl>=3.1.0

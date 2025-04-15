@@ -1,3 +1,10 @@
+"""
+Modulo de utilidades para interactuar con AutoCAD.
+Este módulo proporciona funciones para inicializar la conexión con AutoCAD,
+validar capas, mostrar mensajes y colores, y obtener entradas del usuario.
+El módulo utiliza la biblioteca pyautocad para interactuar con AutoCAD y rich para mostrar mensajes en la consola.
+"""
+
 from pyautocad import Autocad
 from colorama import init, just_fix_windows_console
 from termcolor import colored
@@ -245,26 +252,3 @@ def print_color_options(use_colors=True):
             name_colored = color_name
         print(f"{code_colored}{separator_colored}{name_colored}")
     return color_dict
-
-# Funciones de visualización
-
-
-def display_text_coordinates(data, layer_name):
-    """Muestra las coordenadas de los textos extraídos de la capa especificada."""
-    print("Coordenadas obtenidas en la capa:", layer_name)
-    print("-" * 50)
-    for i, (content, x, y) in enumerate(data, 1):
-        print(f"{i}. Texto: '{content}'\n   Coordenadas: X= {x:.4f}, Y= {y:.4f}")
-    print("-" * 50)
-    print(f"Total de objetos encontrados: {len(data)}")
-
-
-def display_postes_with_numbers(asignaciones, capa_poste, numeros):
-    """Muestra los postes ordenados según la capa de numeración más cercana."""
-    print("Postes ordenados segun capa de numeracion más cercana:")
-    print("-" * 50)
-    for numero, x, y in asignaciones:
-        print(f"Poste {numero} →\n   Coordenadas: X= {x:.4f}, Y= {y:.4f}")
-    print("-" * 50)
-    print(
-        f'Conteo total de postes en la capa "{capa_poste}" encontrados: {len(numeros)}')

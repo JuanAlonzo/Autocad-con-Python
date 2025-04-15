@@ -1,5 +1,17 @@
+"""
+Módulo para la gestión de capas en AutoCAD.
+Este módulo incluye funciones para crear, eliminar y listar capas, así como para validar nombres de capas y colores.
+"""
+
+from utilities.acad_common import (
+    console,
+    progress,
+    is_layer_used,
+    get_layer_color_dict,
+    validate_layer_name,
+    display_message
+)
 from rich import print
-from utilities.acad_common import console, progress, is_layer_used, get_layer_color_dict, validate_layer_name, display_message
 
 
 def get_valid_layer_name(cad_doc):
