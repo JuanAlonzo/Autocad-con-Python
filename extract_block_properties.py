@@ -1,4 +1,9 @@
 """
+Programa para extraer propiedades de bloques en AutoCAD.
+
+Este script permite seleccionar una capa que contenga bloques, extraer todas sus propiedades
+y exportarlas a un archivo CSV o Excel. Las propiedades incluyen información de geometría,
+atributos, propiedades generales y más.
 """
 
 from utilities.acad_common import (

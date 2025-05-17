@@ -163,7 +163,7 @@ class OsnapManager:
 
 
 def show_osnap_menu(acad):
-    """Muestra el menú de gestión de OSNAP."""
+    """Muestra el menú de gestión de OSNAP y maneja las opciones del usuario."""
     manager = OsnapManager(acad)
     current_osnap = manager.get_current_osnap()
 
@@ -184,22 +184,27 @@ def show_osnap_menu(acad):
     choice = display_message("\nSelecciona una opción: ",
                              style='input', use_rich=True)
 
-    if choice == "1":
-        manager.toggle_all_osnaps(True)
-    elif choice == "2":
-        manager.toggle_all_osnaps(False)
-    elif choice == "3":
-        show_custom_osnap_menu(acad, manager)
-    elif choice == "4":
-        # Detectar si OSNAP está activo o no para decidir qué hacer
-        if manager.get_current_osnap() == 0:
-            manager.toggle_osnap_f3(True)
+    try:
+        if choice == "1":
+            manager.toggle_all_osnaps(True)
+        elif choice == "2":
+            manager.toggle_all_osnaps(False)
+        elif choice == "3":
+            show_custom_osnap_menu(acad, manager)
+        elif choice == "4":
+            # Detectar si OSNAP está activo o no para decidir qué hacer
+            if manager.get_current_osnap() == 0:
+                manager.toggle_osnap_f3(True)
+            else:
+                manager.toggle_osnap_f3(False)
+        elif choice == "5":
+            return
         else:
-            manager.toggle_osnap_f3(False)
-    elif choice == "5":
+            display_message("Opción no válida", style='error')
+    except Exception as e:
+        display_message(f"\nOcurrió un error: {str(e)}", style='error')
+        display_message("Volviendo al menú principal...", style='warning')
         return
-    else:
-        display_message("Opción no válida", style='error')
 
     # Mostrar el menú de nuevo para permitir múltiples operaciones
     show_osnap_menu(acad)

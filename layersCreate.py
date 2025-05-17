@@ -28,10 +28,9 @@ def main():
                 break
             create_layer(cad.doc, layer_name, color_num, color_dict)
 
-            continuar = display_message(
-                "\n¿Desea crear otra capa? (s/n): ",
-                style='init', use_rich=True).strip().lower()
-            if continuar != 's':
+            continuar = input(colored(
+                "\n¿Desea crear otra capa? (s/n): ", 'cyan', attrs=['bold'])).strip().lower()
+            if continuar not in ['s', 'si', 'yes', 'y']:
                 display_message("Saliendo del programa...", style='warning')
                 break
         except KeyboardInterrupt:
