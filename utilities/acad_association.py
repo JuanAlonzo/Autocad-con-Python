@@ -196,7 +196,7 @@ class EnhancedElementAssociator(ElementAssociator):
             super().export_data()
 
 
-def select_aditional_layers_interactive(acad, layers_disponibles, exclude_layers):
+def select_additional_layers_interactive(acad, layers_disponibles, exclude_layers):
     """
     Bucle interactivo para seleccionar múltiples capas extras.
     Reemplaza la lógica antigua de 'while True: input...'

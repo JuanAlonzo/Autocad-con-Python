@@ -1,136 +1,51 @@
-from utilities.acad_common import (
-    initialized_autocad,
-    get_available_layers,
-    get_valid_layer_input,
-    display_message,
-    console
-)
-from utilities.acad_utils import (
-    extract_text_and_coordinates,
-    display_text_coordinates,
-    export_data_to_csv,
-    export_data_to_excel
-)
-from rich.panel import Panel
-from rich.text import Text
-
-
-def show_export_menu(data, layer_name):
-    """Muestra un menú para exportar los datos extraídos."""
-    while True:
-        console.print(Panel(
-            Text("OPCIONES DE EXPORTACIÓN", style="bold white"),
-            subtitle="Selecciona una opción",
-            border_style="cyan"
-        ))
-
-        console.print("[1] Exportar a CSV")
-        console.print("[2] Exportar a Excel")
-        console.print("[3] Volver sin exportar")
-
-        option = display_message(
-            "\nElige una opción (1-3): ",
-            style='input',
-            use_rich=True
-        ).strip()
-
-        if option == "1":
-            export_data_to_csv(data, layer_name)
-            break
-        elif option == "2":
-            export_data_to_excel(data, layer_name)
-            break
-        elif option == "3":
-            display_message("No se exportaron datos.", style='info')
-            break
-        else:
-            display_message(
-                "Opción no válida. Intenta de nuevo.", style='error')
-
-
-def show_filter_menu(acad, layer_name):
-    """Muestra un menú para filtrar los datos extraídos."""
-    console.print(Panel(
-        Text("FILTRAR POR TIPO DE TEXTO", style="bold white"),
-        subtitle="Selecciona una opción",
-        border_style="cyan"
-    ))
-
-    console.print("[1] Todos los Textos")
-    console.print("[2] Solo Texto Simple (Text)")
-    console.print("[3] Solo Texto Multiple (MText)")
-
-    option = display_message(
-        "\nElige una opción (1-3): ",
-        style='input',
-        use_rich=True
-    ).strip()
-
-    text_type = "all"
-    if option == "2":
-        text_type = "text"
-    elif option == "3":
-        text_type = "mtext"
-
-    return extract_text_and_coordinates(acad, layer_name, text_type)
+from utilities.acad_common import require_autocad
+from utilities.acad_entities import extract_text_data
+from utilities.acad_export import show_export_menu
+from utilities.acad_layers import get_all_layer_names
+from utilities.acad_io import get_selection_from_list, display_table, get_confirmation
 
 
 def main():
-    """Función principal del programa."""
-    acad = initialized_autocad(display_message(
-        "Programa para Extraer Texto y Coordenadas", style='info', bold=True))
-    if not acad:
-        display_message(
-            "\nNo se puede continuar sin una conexión a AutoCAD.", style='error')
-        display_message("Presione Enter para salir...",
-                        style='input', use_rich=True)
+    acad = require_autocad("Extractor de Texto y Coordenadas")
+
+    layers = get_all_layer_names(acad)
+    layer = get_selection_from_list(
+        "Seleccionar la capa de Texto", layers)
+    if not layer:
         return
 
-    try:
-        layers_disponibles = get_available_layers(acad)
-        layer_name = get_valid_layer_input(
-            "Escribe el nombre de la capa de la cual extraer texto y coordenadas", layers_disponibles, show_table=True)
+    tipos = ["Todos (Text + MText)", "Solo Texto Simple (Text)",
+             "Solo Texto Múltiple (MText)"]
+    sel_tipo = get_selection_from_list("Filtrar por Tipo de Objeto", tipos)
 
-        if layer_name is None:
-            display_message("Saliendo del programa...", style='warning')
-            return
-        display_message(f"Procesando capa: {layer_name}", style='info')
+    if not sel_tipo:
+        return
 
-        data = show_filter_menu(acad, layer_name)
+    # Mapeo simple para la función interna
+    type_code = "all"
+    if "Simple" in sel_tipo:
+        type_code = "text"
+    elif "Múltiple" in sel_tipo:
+        type_code = "mtext"
 
-        if data:
-            display_text_coordinates(data, layer_name)
+    # 3. Extracción
+    # extract_text_data devuelve tuplas: (Texto, X, Y)
+    data_tuples = extract_text_data(acad, layer, type_code)
 
-            # Preguntar si se quieren exportar los datos
-            exportar = display_message(
-                "\n¿Deseas exportar los resultados? (s/n): ",
-                style='input',
-                use_rich=True
-            ).lower().strip()
+    if not data_tuples:
+        return
 
-            if exportar == 's':
-                show_export_menu(data, layer_name)
-        else:
-            display_message(
-                f"No se encontraron textos en la capa '{layer_name}'",
-                style='warning'
-            )
-        continuar = display_message(
-            "\n¿Desea procesar otra capa? (s/n): ",
-            style='input',
-            use_rich=True
-        ).lower().strip()
+    # 4. Visualización
+    # Convertimos tuplas a listas de strings para la tabla
+    headers = ["Contenido", "Coord X", "Coord Y"]
+    rows = [[str(t), str(x), str(y)] for t, x, y in data_tuples[:15]]
 
-        if continuar == 's':
-            main()  # Reiniciar el programa
-        else:
-            display_message(
-                "Programa finalizado. ¡Hasta luego!", style='success')
-    except KeyboardInterrupt:
-        display_message(
-            "\nOperación cancelada por el usuario.", style='warning')
-    except Exception as e:
-        display_message(f"Error inesperado: {e}", style='error')
+    display_table(f"Textos Encontrados ({len(data_tuples)})", headers, rows)
+
+    # 5. Exportación
+    if get_confirmation("¿Exportar reporte a archivo?"):
+        # Como data_tuples es una lista de listas (no diccionarios), pasamos los headers explícitamente
+        show_export_menu(data_tuples, f"textos_{layer}", columns=headers)
 
 
 if __name__ == "__main__":
