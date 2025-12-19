@@ -41,7 +41,7 @@ def export_to_file(data, filename_prefix, columns=None, format='csv'):
         if columns:
             if len(columns) != len(df.columns):
                 display_message(
-                    f"Error al procesar datos para exportacion: {e}.", 'error')
+                    f"Error: Columnas no coinciden: {len(df.columns)} vs {len(columns)}.", 'error')
                 return False
             df.columns = columns
     except Exception as e:
