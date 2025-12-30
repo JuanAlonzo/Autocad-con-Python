@@ -20,6 +20,7 @@ from utilities.acad_io import (
     get_user_input
 )
 from utilities.config import (
+    LAYER_PREFIX_POSTES,
     LAYER_NUMERACION,
     COLOR_NUMERACION,
     COLOR_NUMERACION_ESTRICTA,
@@ -113,7 +114,8 @@ def main():
 
     # CAPAS
     all_layers = get_all_layer_names(acad)
-    postes_layers = [L for L in all_layers if L.upper().startswith("POSTE")]
+    postes_layers = [
+        L for L in all_layers if L.upper().startswith(LAYER_PREFIX_POSTES)]
 
     if not postes_layers:
         display_message("No se encontraron capas 'POSTE*'.", "error")

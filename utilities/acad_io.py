@@ -3,6 +3,7 @@ Módulo IO: acad_io.py
 Responsabilidad: Manejar TODA la entrada y salida de datos con el usuario.
 Aquí viven los inputs, prints, tablas y validaciones visuales.
 """
+import logging
 from rich.table import Table
 from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
@@ -14,6 +15,16 @@ def display_message(message, style='info'):
     Muestra mensajes formateados en la consola.
     Styles: 'info', 'warning', 'error', 'success'.
     """
+    clean_msg = message.replace("[bold]", "").replace("[/bold]", "")
+    if style == 'error':
+        logging.error(clean_msg)
+    elif style == 'warning':
+        logging.warning(clean_msg)
+    elif style == 'success':
+        logging.info(f"[EXITO] {clean_msg}")
+    else:
+        logging.info(clean_msg)
+
     styles = {
         'info': 'bold cyan',
         'warning': 'bold yellow',
