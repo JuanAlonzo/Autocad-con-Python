@@ -12,6 +12,7 @@ from .acad_io import (
     get_selection_from_list,
     get_confirmation
 )
+from .config import DEFAULT_LINEWEIGHT
 
 
 def get_layer_color_dict():
@@ -82,12 +83,37 @@ def create_layer_interactive(acad):
             break
         display_message("Debe ser un número entre 1 y 255.", "error")
 
-    # C. Ejecutar Acción
+    # C. Pedir Grosor de Línea
+    console.print(
+        "\n[bold]Grosores comunes:[/bold] 0, 9, 15, 20, 25, 30, 35, 50...")
+    console.print("Nota: Use -3 para el valor por Defecto.")
+
+    lw_input = get_user_input(
+        f"Grosor de línea (por defecto {DEFAULT_LINEWEIGHT})", default=str(DEFAULT_LINEWEIGHT))
+
+    try:
+        lineweight = int(lw_input)
+    except ValueError:
+        display_message(
+            "Valor inválido para grosor de línea. Usando valor por defecto.", "warning")
+        lineweight = DEFAULT_LINEWEIGHT
+
+    # D. Ejecutar Acción
     try:
         new_layer = acad.doc.Layers.Add(name)
         new_layer.Color = color_num
+        try:
+            new_layer.Lineweight = lineweight
+        except Exception:
+            display_message(
+                f"El grosor {lineweight} no es válido. Usando valor por defecto.", "warning")
+            new_layer.Lineweight = lineweight
+        except Exception:
+            display_message(
+                f"El grosor {lineweight} no es válido. Usando valor por defecto.", "warning")
+            new_layer.Lineweight = DEFAULT_LINEWEIGHT
         display_message(
-            f"Capa '{name}' creada con color {color_num}.", "success")
+            f"Capa '{name}' creada con color {color_num} y grosor de línea {lineweight}.", "success")
     except Exception as e:
         display_message(f"No se pudo crear la capa: {e}", "error")
 

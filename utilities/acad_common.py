@@ -4,6 +4,7 @@ Configuracion global y conexion critica con Autocad.
 """
 
 import sys
+import os
 import logging
 from datetime import datetime
 from pyautocad import Autocad
@@ -11,7 +12,16 @@ from colorama import init, just_fix_windows_console
 from rich.console import Console
 from rich.progress import Progress
 
-log_filename = f"registro_autocad_{datetime.now().strftime('%Y-%m')}.log"
+log_dir = "logs"
+
+if not os.path.exists(log_dir):
+    try:
+        os.makedirs(log_dir)
+    except Exception as e:
+        print(f"Error al crear carpeta de logs: {e}")
+
+log_filename = os.path.join(
+    log_dir, f"registro_autocad_{datetime.now().strftime('%Y-%m')}.log")
 
 logging.basicConfig(
     filename=log_filename,
