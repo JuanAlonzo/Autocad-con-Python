@@ -3,8 +3,26 @@ Módulo de Entidades: acad_entities.py
 Responsabilidad: Extraer datos de objetos de AutoCAD (Bloques, Textos, Líneas).
 Devuelve listas de diccionarios limpias, listas para ser exportadas o procesadas.
 """
+import win32com.client
+import pythoncom
 from .acad_common import console, progress
 from .acad_io import display_message, display_table
+
+
+def get_model_space_safe():
+    """
+    Obtiene el espacio modelo de AutoCAD de manera segura.
+    """
+    try:
+        acad_app = win32com.client.GetActiveObject("AutoCAD.Application")
+    except:
+        try:
+            acad_app = win32com.client.Dispatch("AutoCAD.Application")
+        except Exception as e:
+            console.print(f"[red]Error al conectar con AutoCAD: {e}[/red]")
+            return None
+
+    return acad_app.ActiveDocument.ModelSpace
 
 
 def extract_text_data(acad, layer_name, text_type="all"):
@@ -14,6 +32,12 @@ def extract_text_data(acad, layer_name, text_type="all"):
     Retorna: Lista de tuplas [(Texto, X, Y), ...]
     """
     data = []
+    msp = get_model_space_safe()
+    if not msp:
+        return []
+
+    console.print(
+        f"[cyan]Analizando capa '{layer_name}' (Motor Nativo)...[/cyan]")
 
     # Definir filtros según tipo
     allowed_types = ["AcDbText", "AcDbMText"]
@@ -24,33 +48,22 @@ def extract_text_data(acad, layer_name, text_type="all"):
 
     console.print(f"[cyan]Analizando capa '{layer_name}'...[/cyan]")
 
-    # Barrido optimizado
-    found_objs = []
-    for obj in acad.iter_objects():
-        # Verificación rápida de capa y tipo antes de acceder a propiedades lentas
-        if obj.Layer == layer_name and obj.ObjectName in allowed_types:
-            found_objs.append(obj)
-
-    total = len(found_objs)
-    if total == 0:
-        display_message(
-            f"No se encontraron textos en la capa '{layer_name}'.", "warning")
-        return []
+    count = msp.Count
 
     # Extracción con barra de progreso
     with progress:
         task = progress.add_task(
-            "[green]Extrayendo datos...[/green]", total=total)
+            "[green]Extrayendo datos...[/green]", total=count)
 
-        for obj in found_objs:
+        for i in range(count):
             try:
-                # Normalizamos coordenadas a X, Y (ignoramos Z para textos 2D)
-                # TextString puede fallar en caracteres raros, por eso el try
-                txt = obj.TextString
-                x, y = obj.InsertionPoint[:2]
-                data.append((txt, x, y))
-            except Exception:
-                pass  # Ignoramos objetos corruptos
+                obj = msp.Item(i)
+                if obj.Layer == layer_name and obj.ObjectName in allowed_types:
+                    txt = obj.TextString
+                    coord = obj.InsertionPoint
+                    data.append((txt, coord[0], coord[1]))
+            except:
+                pass
             progress.advance(task)
 
     display_message(
@@ -65,46 +78,53 @@ def extract_block_data(acad, layer_name=None):
     Retorna: Lista de diccionarios con propiedades y atributos.
     """
     blocks_data = []
+    msp = get_model_space_safe()
+    if not msp:
+        return []
 
     msg = f"capa '{layer_name}'" if layer_name else "todas las capas"
     console.print(f"[cyan]Buscando bloques en {msg}...[/cyan]")
 
-    # Fase 1: Recolección
-    target_blocks = []
-    for obj in acad.iter_objects():
-        if obj.ObjectName == "AcDbBlockReference":
-            if layer_name is None or obj.Layer == layer_name:
-                target_blocks.append(obj)
-
-    total = len(target_blocks)
-    if total == 0:
-        display_message("No se encontraron bloques.", "warning")
-        return []
+    count = msp.Count
 
     # Fase 2: Procesamiento detallado
     with progress:
         task = progress.add_task(
-            "[green]Leyendo propiedades...[/green]", total=total)
+            "[green]Leyendo propiedades...[/green]", total=count)
 
-        for blk in target_blocks:
+        for i in range(count):
             try:
-                # Propiedades base
-                info = {
-                    "Nombre": blk.Name,
-                    "Capa": blk.Layer,
-                    "X": round(blk.InsertionPoint[0], 4),
-                    "Y": round(blk.InsertionPoint[1], 4),
-                    "Z": round(blk.InsertionPoint[2], 4),
-                    "Rotacion": round(blk.Rotation, 2),
-                    "Escala X": round(blk.XScaleFactor, 4)
-                }
+                obj = msp.Item(i)
+                if obj.ObjectName != "AcDbBlockReference":
+                    progress.advance(task)
+                    continue
 
-                # Extracción de Atributos (Si tiene)
-                # GetAttributes devuelve una tupla de objetos, iteramos para sacar Tag y Text
-                if blk.HasAttributes:
-                    for attrib in blk.GetAttributes():
-                        # Agregamos prefijo 'Attr_' para diferenciar de propiedades
-                        info[f"Attr_{attrib.TagString}"] = attrib.TextString
+                if layer_name and obj.Layer != layer_name:
+                    progress.advance(task)
+                    continue
+
+                # Propiedades base
+                info = {}
+
+                coords = obj.InsertionPoint
+                info["X"] = round(coords[0], 4)
+                info["Y"] = round(coords[1], 4)
+                info["Z"] = round(coords[2], 4)
+
+                try:
+                    name = obj.EffectiveName if obj.EffectiveName else obj.Name
+                except Exception:
+                    name = obj.Name
+                info["Nombre"] = name
+                info["Capa"] = obj.Layer
+                info["Rotacion"] = round(obj.Rotation, 4)
+
+                if obj.HasAttributes:
+                    attribs = obj.GetAttributes()
+                    for att in attribs:
+                        tag = att.TagString.upper()
+                        val = att.TextString
+                        info[f"Attr_{tag}"] = val
 
                 blocks_data.append(info)
             except Exception:

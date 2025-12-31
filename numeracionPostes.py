@@ -101,6 +101,40 @@ def sort_blocks_unified(blocks_dicts, path_points, search_radius, strict_mode=Fa
     return ordered_blocks
 
 
+def associate_data_layers(main_blocks, data_blocks, max_radius):
+    """
+    Busca el bloque de datos más cercano para cada poste y fusiona sus atributos.
+    """
+    count = 0
+    display_message(f"Asociando datos (Radio: {max_radius}m)...", "info")
+
+    for pole in main_blocks:
+        px, py = pole['X'], pole['Y']
+
+        # Buscar candidatos cercanos
+        candidates = []
+        for info in data_blocks:
+            # Calculamos distancia euclidiana
+            dist = math.hypot(px - info['X'], py - info['Y'])
+            if dist <= max_radius:
+                candidates.append((dist, info))
+
+        # Si encontramos alguno, tomamos el más cercano
+        if candidates:
+            candidates.sort(key=lambda x: x[0])  # Ordenar por distancia
+            best_match = candidates[0][1]  # El objeto más cercano
+
+            # COPIAR SOLO ATRIBUTOS (Ignoramos X, Y del texto para no mover el poste)
+            for key, val in best_match.items():
+                if key.startswith("Attr_"):
+                    pole[key] = val
+
+            count += 1
+
+    display_message(f"Se asociaron datos a {count} postes.", "success")
+    return main_blocks
+
+
 def ensure_layer(acad, layer_name, color_code):
     try:
         acad.doc.Layers.Add(layer_name)
@@ -162,6 +196,31 @@ def main():
     if not sorted_data:
         display_message("No hay postes para numerar.", "error")
         return
+
+    # 4.5 ASOCIACIÓN DE DATOS (NUEVO)
+    if get_confirmation("¿Asociar datos de otra capa (ej: CAT_COD_POSTE)?"):
+        # 1. Pedir capa de datos
+        # Obtenemos lista de capas para que el usuario elija, excluyendo la actual
+        other_layers = [L for L in all_layers if L not in postes_layers]
+        layer_data_name = get_selection_from_list(
+            "Seleccione capa de DATOS:", other_layers)
+
+        if layer_data_name:
+            # 2. Extraer los bloques de datos (Usa el nuevo motor win32com)
+            data_blocks = extract_block_data(acad, layer_data_name)
+
+            if data_blocks:
+                # 3. Pedir radio de asociación (distancia máxima entre poste y texto)
+                try:
+                    r_assoc_str = get_user_input(
+                        f"Radio de asociación (Enter=2.0): ", default="2.0")
+                    r_assoc = float(r_assoc_str)
+                except:
+                    r_assoc = 2.0
+
+                # 4. Ejecutar la magia
+                sorted_data = associate_data_layers(
+                    sorted_data, data_blocks, r_assoc)
 
     # DIBUJO
     # Elegimos color según el modo para diferenciarlos visualmente
