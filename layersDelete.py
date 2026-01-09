@@ -1,14 +1,16 @@
+from utilities.ui_console import ConsoleUI
 from utilities.acad_common import require_autocad
 from utilities.acad_layers import delete_layer_interactive
-from utilities.acad_io import get_confirmation
 
 
 def main():
-    acad = require_autocad("Eliminación de capas")
-    while True:
-        delete_layer_interactive(acad)
+    ui = ConsoleUI()
+    acad = require_autocad(ui)
 
-        if not get_confirmation("¿Desea eliminar otra capa?"):
+    while True:
+        delete_layer_interactive(acad, ui)
+
+        if not ui.confirm("¿Desea eliminar otra capa?"):
             break
 
 

@@ -13,12 +13,7 @@ from utilities.acad_common import require_autocad
 from utilities.acad_layers import get_all_layer_names
 from utilities.acad_entities import extract_block_data
 from utilities.acad_export import show_export_menu
-from utilities.acad_io import (
-    get_selection_from_list,
-    display_message,
-    get_confirmation,
-    get_user_input
-)
+from utilities.ui_console import ConsoleUI
 from utilities.config import (
     LAYER_PREFIX_POSTES,
     LAYER_NUMERACION,
@@ -31,12 +26,14 @@ from utilities.config import (
     DEFAULT_SEARCH_RADIUS
 )
 
+ui = ConsoleUI()
 
-def get_polyline_points(acad, layer_ruta):
+
+def get_polyline_points(acad, layer_ruta, ui):
     """Extrae vértices de la polilínea guía."""
     path_points = []
     found = False
-    display_message(f"Buscando polilínea en capa '{layer_ruta}'...", "info")
+    ui.show_message(f"Buscando polilínea en capa '{layer_ruta}'...", "info")
 
     for obj in acad.iter_objects():
         if obj.Layer == layer_ruta and obj.ObjectName == "AcDbPolyline":
@@ -47,15 +44,15 @@ def get_polyline_points(acad, layer_ruta):
             break
 
     if not found:
-        display_message(f"No se encontró Polilínea en {layer_ruta}.", "error")
+        ui.show_message(f"No se encontró Polilínea en {layer_ruta}.", "error")
         return []
 
-    display_message(
+    ui.show_message(
         f"Ruta detectada con {len(path_points)} vértices.", "success")
     return path_points
 
 
-def sort_blocks_unified(blocks_dicts, path_points, search_radius, strict_mode=False):
+def sort_blocks_unified(blocks_dicts, path_points, ui, search_radius, strict_mode=False):
     """
     Algoritmo de ordenamiento híbrido.
     - strict_mode = True: Ignora postes fuera del radio.
@@ -64,7 +61,7 @@ def sort_blocks_unified(blocks_dicts, path_points, search_radius, strict_mode=Fa
     ordered_blocks = []
     pool = blocks_dicts.copy()
 
-    display_message(
+    ui.show_message(
         f"Procesando con radio {search_radius}u (Modo Estricto: {strict_mode})...", "info")
 
     for milestone in path_points:
@@ -88,25 +85,25 @@ def sort_blocks_unified(blocks_dicts, path_points, search_radius, strict_mode=Fa
     if pool:
         count = len(pool)
         if strict_mode:
-            display_message(
+            ui.show_message(
                 f"Se omitieron {count} postes fuera de rango (Estricto).", "warning")
         else:
-            display_message(
+            ui.show_message(
                 f"Se agregaron {count} postes lejanos al final de la lista (Normal).", "warning")
             ordered_blocks.extend(pool)
     else:
-        display_message(
+        ui.show_message(
             "Todos los postes fueron cubiertos por la ruta.", "success")
 
     return ordered_blocks
 
 
-def associate_data_layers(main_blocks, data_blocks, max_radius):
+def associate_data_layers(main_blocks, data_blocks, max_radius, ui):
     """
     Busca el bloque de datos más cercano para cada poste y fusiona sus atributos.
     """
     count = 0
-    display_message(f"Asociando datos (Radio: {max_radius}m)...", "info")
+    ui.show_message(f"Asociando datos (Radio: {max_radius}m)...", "info")
 
     for pole in main_blocks:
         px, py = pole['X'], pole['Y']
@@ -131,7 +128,7 @@ def associate_data_layers(main_blocks, data_blocks, max_radius):
 
             count += 1
 
-    display_message(f"Se asociaron datos a {count} postes.", "success")
+    ui.show_message(f"Se asociaron datos a {count} postes.", "success")
     return main_blocks
 
 
@@ -144,7 +141,7 @@ def ensure_layer(acad, layer_name, color_code):
 
 
 def main():
-    acad = require_autocad("Numeración de Postes (Global)")
+    acad = require_autocad(ui)
 
     # CAPAS
     all_layers = get_all_layer_names(acad)
@@ -152,57 +149,57 @@ def main():
         L for L in all_layers if L.upper().startswith(LAYER_PREFIX_POSTES)]
 
     if not postes_layers:
-        display_message("No se encontraron capas 'POSTE*'.", "error")
+        ui.show_message("No se encontraron capas 'POSTE*'.", "error")
         return
 
     # Extraemos data
     raw_data = []
     for layer in postes_layers:
-        raw_data.extend(extract_block_data(acad, layer))
+        raw_data.extend(extract_block_data(acad, ui, layer))
     if not raw_data:
         return
 
     # RUTA
     route_layers = [L for L in all_layers if L not in postes_layers]
-    layer_ruta = get_selection_from_list(
+    layer_ruta = ui.get_selection(
         "Seleccione capa de RUTA:", route_layers)
     if not layer_ruta:
         return
 
-    path_points = get_polyline_points(acad, layer_ruta)
+    path_points = get_polyline_points(acad, layer_ruta, ui)
     if not path_points:
         return
 
     # CONFIGURACIÓN DEL PROCESO
     modes = ["Modo Normal (Incluir todos)", "Modo Estricto (Solo cercanos)"]
-    mode_sel = get_selection_from_list("Seleccione Modo de Numeración", modes)
+    mode_sel = ui.get_selection("Seleccione Modo de Numeración", modes)
     if not mode_sel:
         return
 
     strict_mode = "Estricto" in mode_sel
 
     # Pedir radio (Usando valor por defecto del config)
-    r_input = get_user_input(
-        f"Radio de búsqueda (Enter = {DEFAULT_SEARCH_RADIUS})", default=str(DEFAULT_SEARCH_RADIUS))
     try:
-        search_radius = float(r_input)
+        r_val = ui.get_input(
+            f"Radio de búsqueda (Enter = {DEFAULT_SEARCH_RADIUS})", default=str(DEFAULT_SEARCH_RADIUS))
+        search_radius = float(r_val)
     except ValueError:
         search_radius = DEFAULT_SEARCH_RADIUS
 
     # EJECUTAR ORDENAMIENTO
     sorted_data = sort_blocks_unified(
-        raw_data, path_points, search_radius, strict_mode)
+        raw_data, path_points, ui, search_radius, strict_mode)
 
     if not sorted_data:
-        display_message("No hay postes para numerar.", "error")
+        ui.show_message("No hay postes para numerar.", "error")
         return
 
     # 4.5 ASOCIACIÓN DE DATOS (NUEVO)
-    if get_confirmation("¿Asociar datos de otra capa (ej: CAT_COD_POSTE)?"):
+    if ui.confirm("¿Asociar datos de otra capa (ej: CAT_COD_POSTE)?"):
         # 1. Pedir capa de datos
         # Obtenemos lista de capas para que el usuario elija, excluyendo la actual
         other_layers = [L for L in all_layers if L not in postes_layers]
-        layer_data_name = get_selection_from_list(
+        layer_data_name = ui.get_selection(
             "Seleccione capa de DATOS:", other_layers)
 
         if layer_data_name:
@@ -212,7 +209,7 @@ def main():
             if data_blocks:
                 # 3. Pedir radio de asociación (distancia máxima entre poste y texto)
                 try:
-                    r_assoc_str = get_user_input(
+                    r_assoc_str = ui.get_input(
                         f"Radio de asociación (Enter=2.0): ", default="2.0")
                     r_assoc = float(r_assoc_str)
                 except:
@@ -220,7 +217,7 @@ def main():
 
                 # 4. Ejecutar la magia
                 sorted_data = associate_data_layers(
-                    sorted_data, data_blocks, r_assoc)
+                    sorted_data, data_blocks, r_assoc, ui)
 
     # DIBUJO
     # Elegimos color según el modo para diferenciarlos visualmente
@@ -228,7 +225,7 @@ def main():
 
     ensure_layer(acad, LAYER_NUMERACION, target_color)
 
-    display_message(f"Dibujando en capa '{LAYER_NUMERACION}'...", "info")
+    ui.show_message(f"Dibujando en capa '{LAYER_NUMERACION}'...", "info")
 
     for i, blk in enumerate(sorted_data, 1):
         blk['N'] = i  # Columna prioritaria
@@ -246,25 +243,28 @@ def main():
         t.Layer = LAYER_NUMERACION
 
     # 6. EXPORTACIÓN (Con lógica de lista de listas corregida)
-    if get_confirmation("¿Generar reporte Excel/CSV?"):
-        all_keys = list(sorted_data[0].keys())
+    if ui.confirm("¿Generar reporte Excel/CSV?"):
+        all_keys = set()
+        for item in sorted_data:
+            all_keys.update(item.keys())
+        all_keys = list(all_keys)
 
         # Orden de columnas deseado
         priority = ["N", "Nuevo_Numero", "Nombre", "Capa", "X", "Y"]
-        final_columns = [col for col in priority if col in all_keys]
-
+        remaining = [col for col in all_keys if col not in priority]
+        remaining.sort()
         # Agregar columnas restantes (Z, Atributos...)
-        final_columns.extend([k for k in all_keys if k not in final_columns])
+        final_cols = priority + remaining
 
         # Crear Matriz (Lista de Listas)
         data_to_export = []
         for item in sorted_data:
-            row = [item.get(col, "") for col in final_columns]
+            row = [str(item.get(col, "")) for col in final_cols]
             data_to_export.append(row)
 
-        suffix = "Estricto" if strict_mode else "Normal"
+        name = f"Reporte{'Estricto' if strict_mode else 'Normal'}"
         show_export_menu(
-            data_to_export, f"Reporte_Postes_{suffix}", columns=final_columns)
+            data_to_export, name, ui, columns=final_cols)
 
 
 if __name__ == "__main__":

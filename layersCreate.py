@@ -1,15 +1,15 @@
+from utilities.ui_console import ConsoleUI
 from utilities.acad_common import require_autocad
 from utilities.acad_layers import create_layer_interactive
-from utilities.acad_io import get_confirmation
 
 
 def main():
-    acad = require_autocad("Creación de capas")
+    ui = ConsoleUI()
+    acad = require_autocad(ui)
 
     while True:
-        create_layer_interactive(acad)
-
-        if not get_confirmation("¿Desea crear otra capa?"):
+        create_layer_interactive(acad, ui)
+        if not ui.confirm("¿Desea crear otra capa?"):
             break
 
 
