@@ -2,21 +2,22 @@ from utilities.acad_common import require_autocad
 from utilities.acad_entities import extract_text_data
 from utilities.acad_export import show_export_menu
 from utilities.acad_layers import get_all_layer_names
-from utilities.acad_io import get_selection_from_list, display_table, get_confirmation
+from utilities.ui_console import ConsoleUI
 
 
 def main():
-    acad = require_autocad("Extractor de Texto y Coordenadas")
+    ui = ConsoleUI()
+    acad = require_autocad(ui)
 
     layers = get_all_layer_names(acad)
-    layer = get_selection_from_list(
+    layer = ui.get_selection(
         "Seleccionar la capa de Texto", layers)
     if not layer:
         return
 
     tipos = ["Todos (Text + MText)", "Solo Texto Simple (Text)",
              "Solo Texto Múltiple (MText)"]
-    sel_tipo = get_selection_from_list("Filtrar por Tipo de Objeto", tipos)
+    sel_tipo = ui.get_selection("Filtrar por Tipo de Objeto", tipos)
 
     if not sel_tipo:
         return
@@ -40,10 +41,10 @@ def main():
     headers = ["Contenido", "Coord X", "Coord Y"]
     rows = [[str(t), str(x), str(y)] for t, x, y in data_tuples[:15]]
 
-    display_table(f"Textos Encontrados ({len(data_tuples)})", headers, rows)
+    ui.show_table(f"Textos Encontrados ({len(data_tuples)})", headers, rows)
 
     # 5. Exportación
-    if get_confirmation("¿Exportar reporte a archivo?"):
+    if ui.confirm("¿Exportar reporte a archivo?"):
         # Como data_tuples es una lista de listas (no diccionarios), pasamos los headers explícitamente
         show_export_menu(data_tuples, f"textos_{layer}", columns=headers)
 

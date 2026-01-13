@@ -2,22 +2,18 @@ from utilities.acad_common import require_autocad
 from utilities.acad_entities import extract_block_data
 from utilities.acad_export import show_export_menu
 from utilities.acad_layers import get_all_layer_names
-from utilities.acad_io import (
-    get_selection_from_list,
-    display_table,
-    display_message,
-    get_confirmation
-)
+from utilities.ui_console import ConsoleUI
 
 
 def main():
-    acad = require_autocad("Extractor de Propiedades de Bloques")
+    ui = ConsoleUI()
+    acad = require_autocad(ui)
 
     opciones = [
         "Extraer de UNA capa específica",
         "Extraer de TODAS las capas"
     ]
-    seleccion = get_selection_from_list(
+    seleccion = ui.get_selection(
         "Configuracion de Extraccion", opciones)
 
     if not seleccion:
@@ -26,7 +22,7 @@ def main():
     layer_name = None
     if "UNA capa" in seleccion:
         layers = get_all_layer_names(acad)
-        layer_name = get_selection_from_list(
+        layer_name = ui.get_selection(
             "Seleccionar la capa de Bloques", layers)
         if not layer_name:
             return
@@ -40,13 +36,13 @@ def main():
     preview_rows = [[str(row.get(col, '')) for col in headers]
                     for row in data[:10]]
 
-    display_table(
+    ui.show_table(
         f"Vista Previa ({len(data)} bloques encontrados)", headers, preview_rows)
 
     if len(data) > 10:
-        display_message(f"... y {len(data) - 10} filas más...", "info")
+        ui.show_message(f"... y {len(data) - 10} filas más...", "info")
 
-    if get_confirmation("¿Desea exportar los datos extraídos?"):
+    if ui.confirm("¿Desea exportar los datos extraídos?"):
         prefix = f"bloques_{layer_name}_" if layer_name else "reporte_bloques_global"
         show_export_menu(data, prefix)
 
