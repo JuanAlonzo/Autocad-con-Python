@@ -82,4 +82,4 @@ def show_export_menu(data, filename_prefix, ui, columns=None):
         return
 
     fmt = 'csv' if "CSV" in selection else 'excel'
-    export_to_file(data, filename_prefix, columns, format=fmt)
+    export_to_file(data, filename_prefix, ui, columns, format=fmt)

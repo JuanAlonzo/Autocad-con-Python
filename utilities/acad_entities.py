@@ -36,12 +36,7 @@ def extract_text_data(acad, ui, layer_name, text_type="all"):
         ui.show_message(
             f"Analizando '{layer_name}' ...", "info")
 
-    # Definir filtros según tipo
     allowed_types = ["AcDbText", "AcDbMText"]
-    # if text_type == "text":
-    #     allowed_types = ["AcDbText"]
-    # elif text_type == "mtext":
-    #     allowed_types = ["AcDbMText"]
 
     data = []
     count = msp.Count
@@ -106,6 +101,7 @@ def extract_block_data(acad, ui, layer_name=None):
             # Propiedades base
             info = {}
 
+            info["Handle"] = obj.Handle
             coords = obj.InsertionPoint
             info["X"] = round(coords[0], 4)
             info["Y"] = round(coords[1], 4)
