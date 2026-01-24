@@ -27,24 +27,25 @@ def main():
         if not layer_name:
             return
 
-    data = extract_block_data(acad, layer_name)
+    data = extract_block_data(acad, ui, layer_name)
 
     if not data:
+        ui.show_message("No se encontraron datos.", "warning")
         return
 
     headers = list(data[0].keys())
     preview_rows = [[str(row.get(col, '')) for col in headers]
                     for row in data[:10]]
 
-    ui.show_table(
-        f"Vista Previa ({len(data)} bloques encontrados)", headers, preview_rows)
+    ui.show_message(f"Vista Previa ({len(data)} Datos Extraídos): ", "info")
+    ui.show_table(headers, preview_rows)
 
     if len(data) > 10:
         ui.show_message(f"... y {len(data) - 10} filas más...", "info")
 
     if ui.confirm("¿Desea exportar los datos extraídos?"):
         prefix = f"bloques_{layer_name}_" if layer_name else "reporte_bloques_global"
-        show_export_menu(data, prefix)
+        show_export_menu(data, prefix, ui, columns=headers)
 
 
 if __name__ == "__main__":

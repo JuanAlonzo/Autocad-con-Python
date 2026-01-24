@@ -31,9 +31,10 @@ def main():
 
     # 3. Extracción
     # extract_text_data devuelve tuplas: (Texto, X, Y)
-    data_tuples = extract_text_data(acad, layer, type_code)
+    data_tuples = extract_text_data(acad, ui, layer, type_code)
 
     if not data_tuples:
+        ui.show_message("No se encontraron textos.", "warning")
         return
 
     # 4. Visualización
@@ -41,12 +42,13 @@ def main():
     headers = ["Contenido", "Coord X", "Coord Y"]
     rows = [[str(t), str(x), str(y)] for t, x, y in data_tuples[:15]]
 
-    ui.show_table(f"Textos Encontrados ({len(data_tuples)})", headers, rows)
+    ui.show_message(f"Se encontraron ({len(data_tuples)}) Textos ")
+    ui.show_table(headers, rows)
 
     # 5. Exportación
     if ui.confirm("¿Exportar reporte a archivo?"):
         # Como data_tuples es una lista de listas (no diccionarios), pasamos los headers explícitamente
-        show_export_menu(data_tuples, f"textos_{layer}", columns=headers)
+        show_export_menu(data_tuples, f"textos_{layer}", ui, columns=headers)
 
 
 if __name__ == "__main__":
