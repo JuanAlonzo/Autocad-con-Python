@@ -6,7 +6,7 @@ from .acad_layers import (
     get_all_layer_names,
 )
 from .acad_export import show_export_menu
-from .acad_entities import extract_block_data, extract_text_data
+from .acad_entities import extract_block_data, extract_text_data, get_polyline_points
 from .ui_console import ConsoleUI
 from .config import SETTINGS
 
@@ -19,6 +19,7 @@ __all__ = [
     get_all_layer_names,
     extract_block_data,
     extract_text_data,
+    get_polyline_points,
     show_export_menu,
     ConsoleUI,
     SETTINGS,

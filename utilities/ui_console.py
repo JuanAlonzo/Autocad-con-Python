@@ -1,6 +1,14 @@
 from .ui_interface import UserInterface
 from rich.console import Console
-from rich.progress import Progress
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    BarColumn,
+    TaskProgressColumn,
+    TimeRemainingColumn,
+    MofNCompleteColumn,
+)
 from rich.prompt import Prompt, Confirm
 from rich.table import Table
 
@@ -54,7 +62,15 @@ class ConsoleUI(UserInterface):
         return Confirm.ask(f"[bold yellow]{prompt}[/]")
 
     def progress_start(self, total: int, description: str):
-        self.progress = Progress(console=_console)
+        self.progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            MofNCompleteColumn(),
+            TimeRemainingColumn(),
+            console=_console,
+        )
         self.progress.start()
         self.current_task = self.progress.add_task(f"[green]{description}", total=total)
 

@@ -12,37 +12,12 @@ from utilities import (
     get_all_layer_names,
     extract_block_data,
     show_export_menu,
+    get_polyline_points,
     ConsoleUI,
     SETTINGS,
 )
 
 ui = ConsoleUI()
-
-
-def get_polyline_points(acad, layer_ruta, ui):
-    """Extrae vértices de la polilínea guía."""
-    path_points = []
-    found = False
-    ui.show_message(f"Analizando capa de ruta '{layer_ruta}'...", "info")
-
-    for obj in acad.iter_objects():
-        if obj.Layer == layer_ruta and obj.ObjectName == "AcDbPolyline":
-            coords = obj.Coordinates
-            # Convertir array plano [x1,y1, x2,y2] a lista de tuplas [(x,y), (x,y)]
-            for i in range(0, len(coords), 2):
-                path_points.append((coords[i], coords[i + 1]))
-            found = True
-            break
-
-    if not found:
-        ui.show_message(
-            f"Error: No se encontró ninguna Polilínea en la capa '{layer_ruta}'.",
-            "error",
-        )
-        return []
-
-    ui.show_message(f"Ruta válida encontrada: {len(path_points)} vértices.", "success")
-    return path_points
 
 
 def sort_blocks_unified(blocks_dicts, path_points, search_radius, ui, strict_mode):
@@ -171,13 +146,26 @@ def main():
         return
 
     # Extracción
-    ui.progress_start(len(postes_layers), "Extrayendo datos de postes...")
     raw_data = []
     for layer in postes_layers:
-        # Ui=None para no spammear mensajes internos
-        raw_data.extend(extract_block_data(acad, None, layer))
-        ui.progress_update(1)
-    ui.progress_stop()
+        layer_data = extract_block_data(acad, ui, layer)
+        raw_data.extend(layer_data)
+
+    total_original = len(raw_data)
+
+    # Usamos un diccionario para eliminar duplicados basados en el 'Handle'
+    unique_map = {blk["Handle"]: blk for blk in raw_data}
+    raw_data = list(unique_map.values())
+
+    diff = total_original - len(raw_data)
+
+    if diff > 0:
+        ui.show_message(
+            f"Se eliminaron {diff} bloques duplicados.",
+            "info",
+        )
+    ui.show_message(f"Total de bloques únicos detectados: {len(raw_data)}", "info")
+    # -------------------------------------------
 
     if not raw_data:
         ui.show_message("No se encontraron bloques de postes.", "error")

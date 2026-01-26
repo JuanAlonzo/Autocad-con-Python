@@ -14,33 +14,12 @@ from utilities import (
     get_all_layer_names,
     extract_block_data,
     show_export_menu,
+    get_polyline_points,
     ConsoleUI,
     SETTINGS,
 )
 
 ui = ConsoleUI()
-
-
-def get_polyline_points(acad, layer_ruta, ui):
-    """Extrae vértices de la polilínea guía."""
-    path_points = []
-    found = False
-    ui.show_message(f"Buscando polilínea en capa '{layer_ruta}'...", "info")
-
-    for obj in acad.iter_objects():
-        if obj.Layer == layer_ruta and obj.ObjectName == "AcDbPolyline":
-            coords = obj.Coordinates
-            for i in range(0, len(coords), 2):
-                path_points.append((coords[i], coords[i + 1]))
-            found = True
-            break
-
-    if not found:
-        ui.show_message(f"No se encontró Polilínea en {layer_ruta}.", "error")
-        return []
-
-    ui.show_message(f"Ruta detectada con {len(path_points)} vértices.", "success")
-    return path_points
 
 
 def sort_blocks_unified(
