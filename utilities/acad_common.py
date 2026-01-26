@@ -18,20 +18,21 @@ if not os.path.exists(log_dir):
         pass
 
 log_filename = os.path.join(
-    log_dir, f"registro_autocad_{datetime.now().strftime('%Y-%m')}.log")
+    log_dir, f"registro_autocad_{datetime.now().strftime('%Y-%m')}.log"
+)
 
 logging.basicConfig(
     filename=log_filename,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - [%(filename)s] - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    encoding="utf-8"
+    encoding="utf-8",
 )
 
 
 def require_autocad(ui=None):
     """
-    Intenta conectar a AutoCAD. 
+    Intenta conectar a AutoCAD.
     Si recibe ui, usa esa interfaz para mostrar mensajes.
     Devuelve el objeto acad listo para usar.
     """
@@ -50,10 +51,8 @@ def require_autocad(ui=None):
             ui.show_message("ERROR FATAL: No hay conexión a AutoCAD.", "error")
             ui.show_message("Soluciones: ", "warning")
             ui.show_message("1. Abre un dibujo en AutoCAD.", "warning")
-            ui.show_message(
-                "2. Sal de cualquier comando activo (Esc, Esc).", "warning")
-            ui.show_message(
-                "3. Si el error persiste, reinicia AutoCAD.", "warning")
+            ui.show_message("2. Sal de cualquier comando activo (Esc, Esc).", "warning")
+            ui.show_message("3. Si el error persiste, reinicia AutoCAD.", "warning")
         else:
             print(error_msg)
         sys.exit(1)

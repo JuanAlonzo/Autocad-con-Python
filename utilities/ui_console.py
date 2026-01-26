@@ -17,15 +17,10 @@ class ConsoleUI(UserInterface):
             "info": "cyan",
             "success": "bold green",
             "warning": "bold yellow",
-            "error": "bold red"
+            "error": "bold red",
         }
         style = styles.get(level, "white")
-        prefix = {
-            "info": "ℹ",
-            "success": "✅",
-            "warning": "⚠️",
-            "error": "❌"
-        }
+        prefix = {"info": "ℹ", "success": "✅", "warning": "⚠️", "error": "❌"}
         _console.print(f"[{style}]{prefix.get(level, '')} {message}[/]")
 
     def show_table(self, headers: list, data: list):
@@ -61,8 +56,7 @@ class ConsoleUI(UserInterface):
     def progress_start(self, total: int, description: str):
         self.progress = Progress(console=_console)
         self.progress.start()
-        self.current_task = self.progress.add_task(
-            f"[green]{description}", total=total)
+        self.current_task = self.progress.add_task(f"[green]{description}", total=total)
 
     def progress_update(self, step: int = 1):
         if self.current_task is not None:

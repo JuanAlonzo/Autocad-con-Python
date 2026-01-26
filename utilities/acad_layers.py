@@ -4,7 +4,7 @@ Responsabilidad: Contiene TODA la lógica relacionada con creación, eliminació
 Integra la validación lógica con la interfaz de usuario.
 """
 
-from .config import DEFAULT_LINEWEIGHT
+from .config import SETTINGS
 
 
 def get_layer_color_dict():
@@ -19,7 +19,7 @@ def get_layer_color_dict():
         "7": "Blanco",
         "8": "Gris Oscuro",
         "9": "Gris Claro",
-        "256": "Negro"
+        "256": "Negro",
         # Agregar más colores si es necesario
     }
 
@@ -47,22 +47,24 @@ def create_layer_interactive(acad, ui):
     """
     ui.show_message("--- Crear Nueva Capa ---")
 
-    # A. Pedir Nombre
+    # Pedir Nombre
     while True:
         name = ui.get_input("Nombre de la nueva capa (o 'salir')")
-        if not name or name.lower() == 'salir':
+        if not name or name.lower() == "salir":
             return
 
-        # Validación: ¿Ya existe?
+        # Validación
         if name in get_all_layer_names(acad):
             ui.show_message(f"La capa '{name}' ya existe.", "error")
         else:
             break
 
-    # B. Pedir Color
+    # Pedir Color
     colores = get_layer_color_dict()
-    ui.show_message("\nColores comunes: " +
-                    ", ".join(f"{code}: {color}" for code, color in colores.items()))
+    ui.show_message(
+        "\nColores comunes: "
+        + ", ".join(f"{code}: {color}" for code, color in colores.items())
+    )
     # Alternativa: Solo sugerencias
     # ui.show_message("Colores comunes: 1=Rojo, 2=Amarillo, 3=Verde, 7=Blanco", "info")
 
@@ -75,26 +77,27 @@ def create_layer_interactive(acad, ui):
             break
         ui.show_message("Debe ser un número entre 1 y 255.", "error")
 
-    # C. Pedir Grosor de Línea
-    ui.show_message(
-        "\n[bold]Grosores comunes:[/bold] 0, 9, 15, 20, 25, 30, 35, 50...")
+    # Pedir Grosor de Línea
+    ui.show_message("\n[bold]Grosores comunes:[/bold] 0, 9, 15, 20, 25, 30, 35, 50...")
     ui.show_message("Nota: Use -3 para el valor por Defecto.")
 
     lw_input = ui.get_input(
-        f"Grosor de línea (por defecto {DEFAULT_LINEWEIGHT})", default=str(DEFAULT_LINEWEIGHT))
+        f"Grosor de línea (por defecto {SETTINGS.DEFAULT_LINEWEIGHT})",
+        default=str(SETTINGS.DEFAULT_LINEWEIGHT),
+    )
 
     try:
         lineweight = int(lw_input)
-    except:
-        lineweight = DEFAULT_LINEWEIGHT
+    except Exception:
+        lineweight = SETTINGS.DEFAULT_LINEWEIGHT
 
-    # D. Ejecutar Acción
+    # Ejecutar Acción
     try:
         new_layer = acad.doc.Layers.Add(name)
         new_layer.Color = color_num
         try:
             new_layer.Lineweight = lineweight
-        except:
+        except Exception:
             ui.show_message(f"Capa '{name}' creada.", "success")
     except Exception as e:
         ui.show_message(f"No se pudo crear la capa: {e}", "error")
@@ -106,26 +109,27 @@ def delete_layer_interactive(acad, ui):
     """
     ui.show_message("--- Eliminar Capa ---")
 
-    # A. Seleccionar
+    # Seleccionar
     layers = get_all_layer_names(acad)
-    target = ui.get_selection(
-        "Seleccione capa a eliminar", layers)
+    target = ui.get_selection("Seleccione capa a eliminar", layers)
     if not target:
         return
 
-    # B. Validaciones de Seguridad
+    # Validaciones de Seguridad
     if target in ["0", "Defpoints"]:
         ui.show_message(
-            "No se pueden eliminar las capas base del sistema (0/Defpoints).", "error")
+            "No se pueden eliminar las capas base del sistema (0/Defpoints).", "error"
+        )
         return
 
     ui.show_message(f"Verificando uso de capa '{target}'...", "info")
     if is_layer_used(acad, target):
         ui.show_message(
-            f"Imposible eliminar: La capa '{target}' contiene objetos.", "error")
+            f"Imposible eliminar: La capa '{target}' contiene objetos.", "error"
+        )
         return
 
-    # C. Confirmación y Acción
+    # Confirmación y Acción
     if ui.confirm(f"¿Eliminar '{target}' permanentemente?"):
         try:
             acad.doc.Layers.Item(target).Delete()
@@ -138,8 +142,7 @@ def list_layers_interactive(acad, ui):
     """
     Analiza y muestra una tabla comparativa de uso de capas.
     """
-    ui.show_message(
-        "Analizando capas...", "info")
+    ui.show_message("Analizando capas...", "info")
 
     layers = get_all_layer_names(acad)
     used = set()
@@ -148,22 +151,22 @@ def list_layers_interactive(acad, ui):
 
     ui.progress_start(total, "Escaneando objetos...")
     for i, obj in enumerate(acad.iter_objects()):
-        if hasattr(obj, 'Layer'):
+        if hasattr(obj, "Layer"):
             used.add(obj.Layer)
         if i % 50 == 0:
             ui.progress_update(50)
     ui.progress_stop()
 
-    unused = [l for l in layers if l not in used]
+    unused = [L for L in layers if L not in used]
     used_list = sorted(list(used))
 
     if used_list:
         # Preparamos datos para la tabla: Columna simple
-        rows = [[l] for l in used_list]
-        ui.show_message(f"--- Capas en Uso ---", "info")
+        rows = [[L] for L in used_list]
+        ui.show_message("--- Capas en Uso ---", "info")
         ui.show_table(["Nombre"], rows)
 
     if unused:
-        rows = [[l] for l in unused]
-        ui.show_message(f"--- Capas VACÍAS ---", "warning")
+        rows = [[L] for L in unused]
+        ui.show_message("--- Capas VACÍAS ---", "warning")
         ui.show_table(["Nombre"], rows)

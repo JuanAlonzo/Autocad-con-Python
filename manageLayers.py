@@ -2,12 +2,13 @@
 Gestor de Capas de AutoCAD
 Herramienta unificada para crear, eliminar y listar capas
 """
-from utilities.ui_console import ConsoleUI
-from utilities.acad_common import require_autocad
-from utilities.acad_layers import (
+
+from utilities import (
+    require_autocad,
     create_layer_interactive,
     delete_layer_interactive,
-    list_layers_interactive
+    list_layers_interactive,
+    ConsoleUI,
 )
 
 
@@ -22,13 +23,10 @@ def main():
             "Listar capas existentes",
             "Crear nueva capa",
             "Eliminar capa",
-            "Salir"
+            "Salir",
         ]
 
-        seleccion = ui.get_selection(
-            "Seleccione una opción",
-            opciones
-        )
+        seleccion = ui.get_selection("Seleccione una opción", opciones)
 
         if not seleccion or "Salir" in seleccion:
             ui.show_message("Saliendo del gestor de capas...", "info")

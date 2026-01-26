@@ -1,20 +1,18 @@
-from utilities.acad_common import require_autocad
-from utilities.acad_entities import extract_block_data
-from utilities.acad_export import show_export_menu
-from utilities.acad_layers import get_all_layer_names
-from utilities.ui_console import ConsoleUI
+from utilities import (
+    require_autocad,
+    extract_block_data,
+    show_export_menu,
+    get_all_layer_names,
+    ConsoleUI,
+)
 
 
 def main():
     ui = ConsoleUI()
     acad = require_autocad(ui)
 
-    opciones = [
-        "Extraer de UNA capa específica",
-        "Extraer de TODAS las capas"
-    ]
-    seleccion = ui.get_selection(
-        "Configuracion de Extraccion", opciones)
+    opciones = ["Extraer de UNA capa específica", "Extraer de TODAS las capas"]
+    seleccion = ui.get_selection("Configuracion de Extraccion", opciones)
 
     if not seleccion:
         return
@@ -22,8 +20,7 @@ def main():
     layer_name = None
     if "UNA capa" in seleccion:
         layers = get_all_layer_names(acad)
-        layer_name = ui.get_selection(
-            "Seleccionar la capa de Bloques", layers)
+        layer_name = ui.get_selection("Seleccionar la capa de Bloques", layers)
         if not layer_name:
             return
 
@@ -34,8 +31,7 @@ def main():
         return
 
     headers = list(data[0].keys())
-    preview_rows = [[str(row.get(col, '')) for col in headers]
-                    for row in data[:10]]
+    preview_rows = [[str(row.get(col, "")) for col in headers] for row in data[:10]]
 
     ui.show_message(f"Vista Previa ({len(data)} Datos Extraídos): ", "info")
     ui.show_table(headers, preview_rows)

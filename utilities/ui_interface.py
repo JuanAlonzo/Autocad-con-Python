@@ -6,6 +6,7 @@ class UserInterface(ABC):
     Contrato que debe cumplir cualquier interfaz (Consola o GUI).
     El script principal solo llamará a estos métodos.
     """
+
     @abstractmethod
     def show_message(self, message: str, level: str = None) -> str:
         """

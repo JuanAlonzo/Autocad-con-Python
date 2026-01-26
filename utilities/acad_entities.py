@@ -3,6 +3,7 @@ Módulo de Entidades: acad_entities.py
 Responsabilidad: Extraer datos de objetos de AutoCAD (Bloques, Textos, Líneas).
 Devuelve listas de diccionarios limpias, listas para ser exportadas o procesadas.
 """
+
 import win32com.client
 
 
@@ -11,14 +12,17 @@ def get_model_space_safe(ui=None):
     Obtiene el espacio modelo de AutoCAD de manera segura.
     """
     try:
-        return win32com.client.GetActiveObject("AutoCAD.Application").ActiveDocument.ModelSpace
-    except:
+        return win32com.client.GetActiveObject(
+            "AutoCAD.Application"
+        ).ActiveDocument.ModelSpace
+    except Exception:
         try:
-            return win32com.client.Dispatch("AutoCAD.Application").ActiveDocument.ModelSpace
+            return win32com.client.Dispatch(
+                "AutoCAD.Application"
+            ).ActiveDocument.ModelSpace
         except Exception as e:
             if ui:
-                ui.show_message(
-                    f"Error al conectar con AutoCAD: {e}", "error")
+                ui.show_message(f"Error al conectar con AutoCAD: {e}", "error")
             return None
 
 
@@ -33,8 +37,7 @@ def extract_text_data(acad, ui, layer_name, text_type="all"):
         return []
 
     if ui:
-        ui.show_message(
-            f"Analizando '{layer_name}' ...", "info")
+        ui.show_message(f"Analizando '{layer_name}' ...", "info")
 
     allowed_types = ["AcDbText", "AcDbMText"]
 
@@ -49,8 +52,9 @@ def extract_text_data(acad, ui, layer_name, text_type="all"):
             obj = msp.Item(i)
             if obj.Layer == layer_name and obj.ObjectName in allowed_types:
                 data.append(
-                    (obj.TextString, obj.InsertionPoint[0], obj.InsertionPoint[1]))
-        except:
+                    (obj.TextString, obj.InsertionPoint[0], obj.InsertionPoint[1])
+                )
+        except Exception:
             pass
         if ui:
             ui.progress_update(1)
@@ -59,8 +63,7 @@ def extract_text_data(acad, ui, layer_name, text_type="all"):
         ui.progress_stop()
 
     if ui:
-        ui.show_message(
-            f"Se extrajeron {len(data)} textos.", "success")
+        ui.show_message(f"Se extrajeron {len(data)} textos.", "success")
     return data
 
 
@@ -81,7 +84,7 @@ def extract_block_data(acad, ui, layer_name=None):
 
     count = msp.Count
 
-    # Fase 2: Procesamiento detallado
+    # Procesamiento detallado
     if ui:
         ui.progress_start(count, "Procesando bloques...")
 
@@ -108,8 +111,7 @@ def extract_block_data(acad, ui, layer_name=None):
             info["Z"] = round(coords[2], 4)
 
             try:
-                name = obj.EffectiveName if hasattr(
-                    obj, "EffectiveName") else obj.Name
+                name = obj.EffectiveName if hasattr(obj, "EffectiveName") else obj.Name
             except Exception:
                 name = obj.Name
 
@@ -136,5 +138,6 @@ def extract_block_data(acad, ui, layer_name=None):
 
     if ui:
         ui.show_message(
-            f"Procesados {len(blocks_data)} bloques correctamente.", "success")
+            f"Procesados {len(blocks_data)} bloques correctamente.", "success"
+        )
     return blocks_data

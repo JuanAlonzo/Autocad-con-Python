@@ -7,7 +7,7 @@ class TkinterUI(UserInterface):
     def __init__(self):
         self.root = tk.Tk()
         self.root.withdraw()
-        self.root.attributes('-topmost', True)
+        self.root.attributes("-topmost", True)
         self.progress_win = None
         self.progress_bar = None
         self.progress_label = None
@@ -28,7 +28,9 @@ class TkinterUI(UserInterface):
 
     def get_input(self, prompt: str, default: str = None) -> str:
         parent = self._get_top_level()
-        return simpledialog.askstring("Entrada requerida", prompt, initialvalue=default, parent=parent)
+        return simpledialog.askstring(
+            "Entrada requerida", prompt, initialvalue=default, parent=parent
+        )
 
     def confirm(self, prompt: str) -> bool:
         parent = self._get_top_level()
@@ -57,8 +59,9 @@ class TkinterUI(UserInterface):
         ttk.Label(dialog, text=prompt, wraplength=280).pack(pady=10)
 
         selected_var = tk.StringVar()
-        combo = ttk.Combobox(dialog, values=options,
-                             textvariable=selected_var, state="readonly")
+        combo = ttk.Combobox(
+            dialog, values=options, textvariable=selected_var, state="readonly"
+        )
         combo.pack(pady=5, padx=10, fill="x")
         combo.current(0)  # Seleccionar el primero por defecto
 
@@ -74,10 +77,10 @@ class TkinterUI(UserInterface):
         # Botones
         btn_frame = ttk.Frame(dialog)
         btn_frame.pack(pady=10)
-        ttk.Button(btn_frame, text="Aceptar",
-                   command=on_ok).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Cancelar",
-                   command=on_cancel).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Aceptar", command=on_ok).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Cancelar", command=on_cancel).pack(
+            side="left", padx=5
+        )
 
         # Esperar a que se cierre
         dialog.transient(self.root)
@@ -106,9 +109,9 @@ class TkinterUI(UserInterface):
         tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
 
         # Grid layout
-        tree.grid(column=0, row=0, sticky='nsew')
-        vsb.grid(column=1, row=0, sticky='ns')
-        hsb.grid(column=0, row=1, sticky='ew')
+        tree.grid(column=0, row=0, sticky="nsew")
+        vsb.grid(column=1, row=0, sticky="ns")
+        hsb.grid(column=0, row=1, sticky="ew")
 
         frame.grid_columnconfigure(0, weight=1)
         frame.grid_rowconfigure(0, weight=1)
@@ -157,7 +160,8 @@ class TkinterUI(UserInterface):
         self.progress_label.pack(pady=10)
 
         self.progress_bar = ttk.Progressbar(
-            frame, orient="horizontal", length=250, mode="determinate")
+            frame, orient="horizontal", length=250, mode="determinate"
+        )
         self.progress_bar.pack(pady=10)
         self.progress_bar["maximum"] = total
         self.progress_bar["value"] = 0
