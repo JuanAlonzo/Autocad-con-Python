@@ -16,6 +16,7 @@ from utilities import (
     ConsoleUI,
     SETTINGS,
 )
+from utilities.cad_manager import cad
 
 ui = ConsoleUI()
 

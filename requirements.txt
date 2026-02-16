@@ -1,13 +1,6 @@
 colorama==0.4.6
-comtypes==1.4.15
-markdown-it-py==4.0.0
-mdurl==0.1.2
-numpy==2.4.1
-pandas==3.0.0
-pyautocad==0.2.0
-Pygments==2.19.2
-python-dateutil==2.9.0.post0
+PySide6==6.10.2
+PySide6_Addons==6.10.2
+PySide6_Essentials==6.10.2
 pywin32==311
-rich==14.3.1
-six==1.17.0
-tzdata==2025.3
+shiboken6==6.10.2

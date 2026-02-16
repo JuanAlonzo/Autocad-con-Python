@@ -1,19 +1,24 @@
-# Archivos y carpetas de Python
+# Archivos y carpetas
 __pycache__/
 *.pyc
 *.pyo
+
+# Archivos de logging
+logs/
 *.log
+
+# Archivos de salida
+reports/
 *.csv
 *.xlsx
 
-# Entorno virtual (si usas venv)
+# Entorno virtual
 venv/
 env/
 
+
 # Dependencias y paquetes instalados
+dist/
+build/
 *.egg-info/
 *.dist-info/
-
-/test
-
-test.py
