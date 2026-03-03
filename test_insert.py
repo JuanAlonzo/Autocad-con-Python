@@ -5,6 +5,7 @@ Script de Prueba: Insertar Bloque en Crudo (Diagnóstico de Escala)
 from pyautocad import APoint
 from utilities import require_autocad, ConsoleUI
 
+# HARDCODED
 BLOQUE_NOMBRE = "UBICACION POSTES UTM"
 CAPA_TEST = "0"
 
