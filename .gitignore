@@ -16,6 +16,8 @@ reports/
 venv/
 env/
 
+# Cache de tests
+.pytest_cache/
 
 # Dependencias y paquetes instalados
 dist/
