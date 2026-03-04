@@ -19,11 +19,13 @@ def get_polyline_points(layer_name: str) -> list:
 
     try:
         found_valid = False
+        total_objects = cad.msp.Count
 
-        for obj in cad.msp:
+        for i in range(total_objects):
+            obj = cad.msp.Item(i)
             if (
                 obj.EntityName in ["AcDbPolyline", "AcDb2dPolyline", "AcDb3dPolyline"]
-                and obj.Layer == layer_name
+                and obj.Layer.upper() == layer_name.upper()
             ):
                 coords = obj.Coordinates
 

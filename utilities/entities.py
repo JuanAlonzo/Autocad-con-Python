@@ -4,7 +4,9 @@ from .cad_manager import cad
 logger = logging.getLogger(__name__)
 
 
-def extract_blocks(layer_name: str = None, layer_prefix: str = None) -> list:
+def extract_blocks(
+    layer_name: str = None, layer_prefix: str = None, progress_callback=None
+) -> list:
     """
     Extrae datos de bloques (INSERT) iterando sobre el ModelSpace con win32com.
     Opcionalmente filtra por capa.
@@ -25,7 +27,13 @@ def extract_blocks(layer_name: str = None, layer_prefix: str = None) -> list:
         logger.info("Escaneando bloques en todas las capas...")
 
     try:
-        for obj in cad.msp:
+        total_objects = cad.msp.Count
+        for i in range(total_objects):
+            obj = cad.msp.Item(i)
+
+            if progress_callback and i % 100 == 0:
+                progress_callback(int((i / total_objects) * 100))
+
             if obj.EntityName == "AcDbBlockReference":
                 if layer_name and obj.Layer.upper() != layer_name.upper():
                     continue
@@ -60,6 +68,9 @@ def extract_blocks(layer_name: str = None, layer_prefix: str = None) -> list:
 
                 blocks_data.append(data)
 
+        if progress_callback:
+            progress_callback = 100
+
         logger.info(f"Se extrajeron {len(blocks_data)} bloques exitosamente.")
 
     except Exception as e:
@@ -68,7 +79,9 @@ def extract_blocks(layer_name: str = None, layer_prefix: str = None) -> list:
     return blocks_data
 
 
-def extract_texts(layer_name: str = None, text_type: str = "all") -> list:
+def extract_texts(
+    layer_name: str = None, text_type: str = "all", progress_callback=None
+) -> list:
     """
     Extrae textos simples (TEXT) y/o múltiples (MTEXT).
     Devuelve una lista de diccionarios listos para Pandas/Excel o para cálculos lógicos.
@@ -88,9 +101,15 @@ def extract_texts(layer_name: str = None, text_type: str = "all") -> list:
         valid_types.append("AcDbMText")
 
     try:
-        for obj in cad.msp:
+        total_objects = cad.msp.Count
+        for i in range(total_objects):
+            obj = cad.msp.Item(i)
+
+            if progress_callback and i % 100 == 0:
+                progress_callback(int((i / total_objects) * 100))
+
             if obj.EntityName in valid_types:
-                if layer_name and obj.Layer != layer_name:
+                if layer_name and obj.Layer.upper() != layer_name.upper():
                     continue
 
                 data = {
@@ -103,6 +122,9 @@ def extract_texts(layer_name: str = None, text_type: str = "all") -> list:
                     "Tipo": obj.EntityName,
                 }
                 texts_data.append(data)
+
+        if progress_callback:
+            progress_callback(100)
 
         logger.info(f"Se extrajeron {len(texts_data)} textos exitosamente.")
 

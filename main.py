@@ -1,24 +1,29 @@
 import sys
 import logging
 from PySide6.QtWidgets import QApplication
-from interface.view import MainWindow
-from interface.controller import Controller
-
-# Configuración básica de logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+from utilities.logger import setup_logger
+from utilities.config import SETTINGS
+from interface.views.main_window import MainWindow
+from interface.controllers.main_controller import MainController
 
 
 def main():
+    """Inicializacion principal del programa."""
+    setup_logger()
+    logger = logging.getLogger(__name__)
+    logger.info("Iniciando AutoCAD Tools")
+
+    SETTINGS.load_from_file()
+
     app = QApplication(sys.argv)
 
     # Inyección de dependencias (MVC)
-    controller = Controller()
+    controller = MainController()
     window = MainWindow(controller)
     controller.set_view(window)
 
     window.show()
+    logger.info("Aplicación lista para usar.")
     sys.exit(app.exec())
 
 
