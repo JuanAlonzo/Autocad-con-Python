@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -13,9 +14,12 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from utilities.config import SETTINGS
 
+if TYPE_CHECKING:
+    from interface.controllers.numeracion_ctrl import NumeracionController
+
 
 class TabNumeracion(QWidget):
-    def __init__(self, controller):
+    def __init__(self, controller: "NumeracionController"):
         super().__init__()
         self.controller = controller
         self.setup_ui()

@@ -132,3 +132,49 @@ def extract_texts(
         logger.error(f"Error crítico extrayendo textos: {e}")
 
     return texts_data
+
+
+def extract_network_lines(layers_dict: dict):
+    """
+    Extrae segmentos de red (AcDbLine y AcDbPolyline) basándose en un diccionario de capas.
+    Devuelve una lista de tuplas con los puntos de inicio y fin: [((x1, y1), (x2, y2)), ...]
+    """
+    if not cad.is_connected:
+        logger.error("AutoCAD no está conectado.")
+        return []
+
+    segments = []
+    # Convertimos los valores del diccionario a mayúsculas para evitar errores de tipeo
+    valid_layers = [layer_name.upper() for layer_name in layers_dict.values()]
+    logger.info(f"Escaneando red física en las capas: {valid_layers}")
+
+    try:
+        total_objects = cad.msp.Count
+        for i in range(total_objects):
+            obj = cad.msp.Item(i)
+
+            if obj.Layer.upper() not in valid_layers:
+                continue
+
+            # Si es una línea simple
+            if obj.EntityName == "AcDbLine":
+                p1 = (round(obj.StartPoint[0], 4), round(obj.StartPoint[1], 4))
+                p2 = (round(obj.EndPoint[0], 4), round(obj.EndPoint[1], 4))
+                segments.append((p1, p2))
+
+            # Si es una polilínea (Cable continuo)
+            elif obj.EntityName in ["AcDbPolyline", "AcDb2dPolyline"]:
+                coords = obj.Coordinates
+                step = 2 if obj.EntityName == "AcDbPolyline" else 3
+
+                # Iterar por los vértices para crear segmentos individuales
+                for j in range(0, len(coords) - step, step):
+                    p1 = (round(coords[j], 4), round(coords[j + 1], 4))
+                    p2 = (round(coords[j + step], 4), round(coords[j + step + 1], 4))
+                    segments.append((p1, p2))
+
+        logger.info(f"Se extrajeron {len(segments)} segmentos de red.")
+    except Exception as e:
+        logger.error(f"Error crítico extrayendo red: {e}")
+
+    return segments

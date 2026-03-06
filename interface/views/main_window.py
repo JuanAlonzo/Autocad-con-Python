@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -13,9 +14,12 @@ from .tab_extractor import TabExtractor
 from .tab_numeracion import TabNumeracion
 from .tab_logs import TabLogs
 
+if TYPE_CHECKING:
+    from interface.controllers.main_controller import MainController
+
 
 class MainWindow(QMainWindow):
-    def __init__(self, controller):
+    def __init__(self, controller: "MainController"):
         super().__init__()
         self.controller = controller
         self.setWindowTitle("AutoCAD Tools v2.0")

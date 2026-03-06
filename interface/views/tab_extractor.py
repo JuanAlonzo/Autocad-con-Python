@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -12,9 +13,12 @@ from PySide6.QtWidgets import (
     QProgressBar,
 )
 
+if TYPE_CHECKING:
+    from interface.controllers.extractor_ctrl import ExtractorController
+
 
 class TabExtractor(QWidget):
-    def __init__(self, controller):
+    def __init__(self, controller: "ExtractorController"):
         super().__init__()
         self.controller = controller
         self.setup_ui()
@@ -46,9 +50,9 @@ class TabExtractor(QWidget):
         self.table = QTableWidget()
         layout.addWidget(self.table)
 
-        self.btn_export = QPushButton("Exportar a Excel")
+        self.btn_export = QPushButton("Exportar a CSV")
         self.btn_export.setEnabled(False)
-        self.btn_export.clicked.connect(self.controller.export_to_excel)
+        self.btn_export.clicked.connect(self.controller.export_to_csv)
         layout.addWidget(self.btn_export)
 
         self.ext_progress = QProgressBar()
@@ -98,6 +102,6 @@ class TabExtractor(QWidget):
 
     def show_save_dialog(self) -> str:
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Guardar Excel", "", "Excel Files (*.xlsx)"
+            self, "Guardar CSV", "", "CSV Files (*.csv)"
         )
         return file_path

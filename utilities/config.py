@@ -21,8 +21,8 @@ class AppSettings:
 
         self.TEXT_HEIGHT = 1.5
         self.CIRCLE_RADIUS = 2.0
-        self.TEXT_OFFSET_X = -3.0
-        self.TEXT_OFFSET_Y = -2.5
+        self.TEXT_OFFSET_X = 0.0
+        self.TEXT_OFFSET_Y = 0.0
 
         self.DEFAULT_SEARCH_RADIUS = 5.0
         self.DEFAULT_ASSOCIATION_RADIUS = 5.0
