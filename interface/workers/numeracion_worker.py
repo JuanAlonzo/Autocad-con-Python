@@ -2,6 +2,8 @@ import pythoncom
 from PySide6.QtCore import QThread, Signal
 from utilities.cad_manager import cad
 from utilities import geometry, entities, drawing, layers
+from utilities.graph import NetworkGraph
+from utilities.geometry import calculate_distance
 from utilities.config import SETTINGS
 
 
@@ -19,105 +21,201 @@ class NumeracionWorker(QThread):
         self.cfg = config_ui
 
     def run(self):
-        pythoncom.CoInitialize()  # Inicializar COM para este hilo
-        cad.connect()  # Asegurar conexión a AutoCAD en este hilo
+        pythoncom.CoInitialize()
+        cad.connect()
         try:
-            self.log_signal.emit(
-                f"Paso 1: Extrayendo postes (Prefijo: '{SETTINGS.LAYER_PREFIX_POSTES}')..."
-            )
-            postes_crudos = entities.extract_blocks(
-                layer_prefix=SETTINGS.LAYER_PREFIX_POSTES
-            )
-
-            if not postes_crudos:
-                self.log_signal.emit("Operación cancelada: No se encontraron bloques.")
-                self.finished_signal.emit(False)
-                return
-
-            self.progress_signal.emit(20)  # 20% - Extracción finalizada
-
-            self.log_signal.emit("Paso 2: Leyendo polilínea de ruta...")
-            puntos_ruta = geometry.get_polyline_points(self.cfg["capa_ruta"])
-            if not puntos_ruta:
-                self.log_signal.emit("Operación cancelada: Ruta no encontrada.")
-                self.finished_signal.emit(False)
-                return
-
-            self.progress_signal.emit(40)  # 40% - Ruta procesada
-
-            self.log_signal.emit("Paso 3: Ordenando bloques espacialmente...")
-            postes_ordenados = geometry.sort_blocks_by_path(
-                blocks=postes_crudos,
-                path_points=puntos_ruta,
-                search_radius=self.cfg["radio"],
-                strict_mode=self.cfg["estricto"],
-            )
-
-            self.progress_signal.emit(60)  # 60% - Ordenamiento matemático finalizado
-
-            if self.cfg["asociar"] and self.cfg["capa_datos"]:
-                self.log_signal.emit(
-                    f"Paso Opcional: Buscando datos en capa '{self.cfg['capa_datos']}'..."
-                )
-                datos_asociar = entities.extract_texts(
-                    layer_name=self.cfg["capa_datos"]
-                )
-                if not datos_asociar:
-                    datos_asociar = entities.extract_blocks(
-                        layer_name=self.cfg["capa_datos"]
-                    )
-
-                if datos_asociar:
-                    postes_ordenados = geometry.associate_data(
-                        base_blocks=postes_ordenados,
-                        data_entities=datos_asociar,
-                        radius=SETTINGS.DEFAULT_ASSOCIATION_RADIUS,
-                    )
-
-            self.progress_signal.emit(70)  # 70% - Asociación de datos finalizada
-
+            estrategia = self.cfg.get("estrategia", "DFS")
             capa_destino = SETTINGS.CAPA_DESTINO
-            color_capa = (
-                SETTINGS.COLOR_NUMERACION_ESTRICTA
-                if self.cfg["estricto"]
-                else SETTINGS.COLOR_NUMERACION
-            )
-            layers.ensure_layer(capa_destino, color=color_capa)
+            layers.ensure_layer(capa_destino, color=SETTINGS.COLOR_NUMERACION)
 
-            self.log_signal.emit(
-                "Paso 4: Insertando bloques de numeración en AutoCAD..."
-            )
-            total = len(postes_ordenados)
-            exitos = 0
+            # TOPOLOGÍA (DFS)
+            if estrategia == "DFS":
+                self.log_signal.emit("Modo DFS Iniciado. Extrayendo red y postes...")
+                segmentos = entities.extract_network_lines(self.cfg["dict_red"])
+                todos_los_bloques = entities.extract_blocks()
+                nombres_esperados = [
+                    k.upper() for k in self.cfg.get("dict_postes", {}).keys()
+                ]
+                filtro_capa = self.cfg.get("filtro_capa")
 
-            # Iteración con actualización dinámica de progreso (del 70% al 100%)
-            for idx, poste in enumerate(postes_ordenados, start=1):
-                etiqueta = str(idx)  # Corrección aplicada: sin zfill
-                px = poste["X"] + SETTINGS.TEXT_OFFSET_X
-                py = poste["Y"] + SETTINGS.TEXT_OFFSET_Y
+                postes_validos = []
+                for b in todos_los_bloques:
+                    # nombre de bloque coincide?
+                    nombre_match = b["Nombre"].upper() in nombres_esperados
 
-                insercion_ok = drawing.insert_block_with_attributes(
-                    x=px,
-                    y=py,
-                    block_name=SETTINGS.BLOQUE_A_INSERTAR,
-                    layer=capa_destino,
-                    scale=SETTINGS.ESCALA_BLOQUE,
-                    attributes={SETTINGS.ATRIBUTO_ETIQUETA: etiqueta},
+                    # perfil exige una capa específica, coincide?
+                    capa_match = True
+                    if filtro_capa:
+                        capa_match = b["Capa"].upper() == filtro_capa.upper()
+
+                    # agregamos solo si pasa ambas pruebas
+                    if nombre_match and capa_match:
+                        postes_validos.append(b)
+
+                if not segmentos or not postes_validos:
+                    raise ValueError("Faltan datos de red o postes para ejecutar DFS.")
+
+                self.log_signal.emit(
+                    "Aplicando División de Aristas (Split) para postes intermedios..."
                 )
-                if insercion_ok:
-                    exitos += 1
+                # Modificamos la topología antes de crear el grafo
+                segmentos = geometry.split_segments_with_poles(
+                    segmentos, postes_validos, tolerancia=1.5
+                )
 
-                # Calcular progreso fraccional
-                current_progress = 70 + int((idx / total) * 30)
-                self.progress_signal.emit(current_progress)
+                self.progress_signal.emit(30)
 
-            self.log_signal.emit(f"--- FINALIZADO: {exitos} etiquetas insertadas. ---")
+                grafo = NetworkGraph(tolerance=self.cfg["tolerancia_grafo"])
+                for p1, p2 in segmentos:
+                    grafo.add_line(p1, p2)
+
+                nodo_raiz, dist = grafo.find_nearest_node(
+                    self.cfg["punto_inicio"], max_radius=self.cfg["radio_snap"]
+                )
+                if not nodo_raiz:
+                    raise ValueError("Punto de inicio muy alejado de la red.")
+
+                ruta_logica = grafo.dfs_traversal(nodo_raiz)
+                self.progress_signal.emit(60)
+
+                exitos = self._ejecutar_insercion_dfs(
+                    ruta_logica, postes_validos, capa_destino
+                )
+
+            # BÚSQUEDA SIMPLE GEOMÉTRICA
+            elif estrategia == "SIMPLE":
+                self.log_signal.emit(
+                    "Modo Simple Iniciado. Buscando bloques específicos..."
+                )
+                todos_los_bloques = entities.extract_blocks()
+                nombres_esperados = [
+                    k.upper() for k in self.cfg.get("dict_postes", {}).keys()
+                ]
+                filtro_capa = self.cfg.get("filtro_capa")
+
+                postes_validos = []
+                for b in todos_los_bloques:
+                    # nombre del bloque coincide?
+                    nombre_match = b["Nombre"].upper() in nombres_esperados
+
+                    # perfil exige una capa específica, coincide?
+                    capa_match = True
+                    if filtro_capa:
+                        capa_match = b["Capa"].upper() == filtro_capa.upper()
+
+                    # agregamos si pasa ambas pruebas
+                    if nombre_match and capa_match:
+                        postes_validos.append(b)
+
+                if not postes_validos:
+                    raise ValueError(
+                        "No se encontraron postes válidos para la numeración simple."
+                    )
+
+                self.progress_signal.emit(50)
+
+                # Ord por prox euclidiana desde punto de inicio
+                punto_inicio = self.cfg["punto_inicio"]
+                postes_ordenados = sorted(
+                    postes_validos,
+                    key=lambda p: calculate_distance((p["X"], p["Y"]), punto_inicio),
+                )
+
+                exitos = self._ejecutar_insercion_secuencial(
+                    postes_ordenados, capa_destino
+                )
+
+            self.log_signal.emit(f"Inserción completa: {exitos} postes numerados.")
             self.progress_signal.emit(100)
             self.finished_signal.emit(True)
 
         except Exception as e:
-            self.log_signal.emit(f"ERROR CRÍTICO durante la ejecución: {e}")
+            self.log_signal.emit(f"ERROR: {e}")
             self.finished_signal.emit(False)
 
         finally:
-            pythoncom.CoUninitialize()  # Limpiar COM al finalizar el hilo
+            pythoncom.CoUninitialize()
+
+    # MÉTODOS AUXILIARES DE INSERCIÓN
+
+    def _ejecutar_insercion_dfs(self, ruta_logica, postes_validos, capa_destino) -> int:
+        exitos = 0
+        numero_actual = 1
+        radio_asociacion = (
+            1.5  # Margen de captura desde el vértice de la línea al bloque
+        )
+
+        total_nodos = len(ruta_logica)
+
+        # ETAPA 1: RECORRIDO TOPOLÓGICO (NODOS MÚLTIPLES)
+        for idx, pt_grafo in enumerate(ruta_logica):
+            postes_en_este_nodo = []
+
+            # En lugar de 'break', recopilamos TODOS los postes en este radio
+            for poste in postes_validos:
+                dist_poste = calculate_distance(pt_grafo, (poste["X"], poste["Y"]))
+                if dist_poste <= radio_asociacion:
+                    postes_en_este_nodo.append((dist_poste, poste))
+
+            if postes_en_este_nodo:
+                # Los ordenamos por cercanía exacta al vértice de la red
+                postes_en_este_nodo.sort(key=lambda item: item[0])
+
+                for _, poste_encontrado in postes_en_este_nodo:
+                    if self._insertar_bloque(
+                        poste_encontrado, numero_actual, capa_destino
+                    ):
+                        exitos += 1
+                        numero_actual += 1
+                    # Retiramos para no contarlo dos veces
+                    postes_validos.remove(poste_encontrado)
+
+            # Progreso del 60% al 90%
+            self.progress_signal.emit(60 + int((idx / total_nodos) * 30))
+
+        # ETAPA 2: BARRIDO DE POSTES REZAGADOS
+        # Si la lista no quedó vacía, es porque hay postes fuera de los ramales principales
+        if len(postes_validos) > 0:
+            self.log_signal.emit(
+                f"Barrido final: Numerando {len(postes_validos)} postes rezagados fuera de la red..."
+            )
+
+            # Tomamos el último punto del grafo como referencia, o el punto de inicio si algo falló
+            punto_ref = ruta_logica[-1] if ruta_logica else self.cfg["punto_inicio"]
+
+            # Ordenamos los rezagados por proximidad al final de la red
+            postes_rezagados = sorted(
+                postes_validos,
+                key=lambda p: calculate_distance((p["X"], p["Y"]), punto_ref),
+            )
+
+            for poste in postes_rezagados:
+                if self._insertar_bloque(poste, numero_actual, capa_destino):
+                    exitos += 1
+                    numero_actual += 1
+
+        return exitos
+
+    def _ejecutar_insercion_secuencial(self, postes_ordenados, capa_destino) -> int:
+        exitos = 0
+        numero_actual = 1
+        total_postes = len(postes_ordenados)
+
+        for idx, poste in enumerate(postes_ordenados):
+            if self._insertar_bloque(poste, numero_actual, capa_destino):
+                exitos += 1
+                numero_actual += 1
+            self.progress_signal.emit(50 + int((idx / total_postes) * 50))
+        return exitos
+
+    def _insertar_bloque(
+        self, poste_datos: dict, numero: int, capa_destino: str
+    ) -> bool:
+        return drawing.insert_block_with_attributes(
+            x=poste_datos["X"] + SETTINGS.TEXT_OFFSET_X,
+            y=poste_datos["Y"] + SETTINGS.TEXT_OFFSET_Y,
+            block_name=SETTINGS.BLOQUE_A_INSERTAR,
+            layer=capa_destino,
+            scale=SETTINGS.ESCALA_BLOQUE,
+            attributes={SETTINGS.ATRIBUTO_ETIQUETA: str(numero)},
+        )

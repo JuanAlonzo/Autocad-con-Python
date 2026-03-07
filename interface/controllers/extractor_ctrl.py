@@ -73,11 +73,11 @@ class ExtractorController:
                         if isinstance(row, dict):
                             writer.writerow(row)
             else:
-                # Flujo para listas o tuplas simples (Ej: Coordenadas de red)
+                # Flujo para listas o tuplas simples
                 with open(file_path, mode="w", newline="", encoding="utf-8") as f:
                     writer = csv.writer(f)
                     for row in self.current_data:
-                        # Si es una tupla anidada ej: ((x1,y1), (x2,y2)), la aplanamos
+                        # Tupla anidada ej: ((x1,y1), (x2,y2)), la aplanamos
                         if isinstance(row, (list, tuple)):
                             # Aplanar un nivel si es necesario, o guardarla cruda
                             fila_plana = []

@@ -30,7 +30,7 @@ class TabExtractor(QWidget):
         controls_layout.addWidget(QLabel("Nombre de la Capa (vacío = todas):"))
 
         self.input_layer = QLineEdit()
-        self.input_layer.setPlaceholderText("Ej: POSTES_PROYECTO")
+        self.input_layer.setPlaceholderText("Ej: POSTE_C_9")
         controls_layout.addWidget(self.input_layer)
 
         self.btn_extract_blocks = QPushButton("Extraer Bloques")

@@ -3,15 +3,12 @@ from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QPushButton,
-    QLineEdit,
     QGroupBox,
-    QDoubleSpinBox,
-    QRadioButton,
-    QCheckBox,
+    QComboBox,
+    QLabel,
     QFormLayout,
     QProgressBar,
 )
-from PySide6.QtCore import Qt
 from utilities.config import SETTINGS
 
 if TYPE_CHECKING:
@@ -27,45 +24,17 @@ class TabNumeracion(QWidget):
     def setup_ui(self):
         layout = QVBoxLayout(self)
 
-        group_ruta = QGroupBox("1. Configuración de la Ruta y Búsqueda")
-        form_ruta = QFormLayout(group_ruta)
+        # Selector de Perfil Estándar
+        group_perfil = QGroupBox("1. Estandarización de Numeración")
+        form_perfil = QFormLayout(group_perfil)
 
-        self.input_ruta = QLineEdit()
-        self.input_ruta.setPlaceholderText(
-            f"Por defecto: {SETTINGS.LAYER_PREFIX_POSTES}"
-        )
-        form_ruta.addRow("Capa de la Ruta:", self.input_ruta)
+        self.combo_perfiles = QComboBox()
+        # Cargar perfiles desde config
+        for key, config in SETTINGS.PERFILES_NUMERACION.items():
+            self.combo_perfiles.addItem(config["descripcion"], userData=key)
 
-        self.spin_radio = QDoubleSpinBox()
-        self.spin_radio.setRange(0.1, 100.0)
-        self.spin_radio.setValue(SETTINGS.DEFAULT_SEARCH_RADIUS)
-        form_ruta.addRow("Radio de Búsqueda (m):", self.spin_radio)
-
-        layout.addWidget(group_ruta)
-
-        group_modo = QGroupBox("2. Modo de Ordenamiento Espacial")
-        vbox_modo = QVBoxLayout(group_modo)
-
-        self.radio_normal = QRadioButton("Modo Normal (Agrega dispersos al final)")
-        self.radio_normal.setChecked(True)
-        self.radio_estricto = QRadioButton("Modo Estricto (Ignora fuera del radio)")
-
-        vbox_modo.addWidget(self.radio_normal)
-        vbox_modo.addWidget(self.radio_estricto)
-        layout.addWidget(group_modo)
-
-        group_datos = QGroupBox("3. Asociación de Datos")
-        form_datos = QFormLayout(group_datos)
-
-        self.check_asociar = QCheckBox("Cruzar con datos de otra capa")
-        self.check_asociar.stateChanged.connect(self.toggle_asociacion)
-        form_datos.addRow(self.check_asociar)
-
-        self.input_datos = QLineEdit()
-        self.input_datos.setEnabled(False)
-        form_datos.addRow("Capa de Datos:", self.input_datos)
-
-        layout.addWidget(group_datos)
+        form_perfil.addRow(QLabel("Caso de Uso:"), self.combo_perfiles)
+        layout.addWidget(group_perfil)
 
         layout.addStretch()
 
@@ -75,16 +44,13 @@ class TabNumeracion(QWidget):
         self.progress_bar.setVisible(False)
         layout.addWidget(self.progress_bar)
 
-        self.btn_ejecutar_num = QPushButton("EJECUTAR NUMERACIÓN")
+        self.btn_ejecutar_num = QPushButton("SELECCIONAR PUNTO DE INICIO Y NUMERAR")
         self.btn_ejecutar_num.setMinimumHeight(50)
         self.btn_ejecutar_num.setStyleSheet(
-            "font-weight: bold; font-size: 14px; background-color: #2b579a; color: white;"
+            "font-weight: bold; background-color: #2b579a; color: white;"
         )
         self.btn_ejecutar_num.clicked.connect(self.controller.ejecutar_numeracion)
         layout.addWidget(self.btn_ejecutar_num)
-
-    def toggle_asociacion(self, state):
-        self.input_datos.setEnabled(state == Qt.Checked.value)
 
     def set_execution_state(self, is_running: bool):
         self.btn_ejecutar_num.setEnabled(not is_running)
@@ -96,10 +62,16 @@ class TabNumeracion(QWidget):
         self.progress_bar.setValue(value)
 
     def get_numeracion_config(self):
+        # Recuperar la clave del perfil seleccionado (EXISTENTES, PROYECTADOS o APOYO)
+        perfil_key = self.combo_perfiles.currentData()
+        perfil_data = SETTINGS.PERFILES_NUMERACION.get(perfil_key, {})
+
         return {
-            "capa_ruta": self.input_ruta.text().strip() or SETTINGS.LAYER_PREFIX_POSTES,
-            "radio": self.spin_radio.value(),
-            "estricto": self.radio_estricto.isChecked(),
-            "asociar": self.check_asociar.isChecked(),
-            "capa_datos": self.input_datos.text().strip(),
+            "perfil_id": perfil_key,
+            "estrategia": perfil_data.get("estrategia"),
+            "dict_red": perfil_data.get("dict_red", {}),
+            "dict_postes": perfil_data.get("dict_postes", {}),
+            "filtro_capa": perfil_data.get("filtro_capa"),
+            "tolerancia_grafo": 0.1,
+            "radio_snap": 5.0,
         }

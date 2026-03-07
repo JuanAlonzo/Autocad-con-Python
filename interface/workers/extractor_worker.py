@@ -15,8 +15,8 @@ class ExtractorWorker(QThread):
         self.layer_arg = layer_arg
 
     def run(self):
-        pythoncom.CoInitialize()  # Inicializar COM para este hilo
-        cad.connect()  # Asegurar conexión a AutoCAD en este hilo
+        pythoncom.CoInitialize()
+        cad.connect()
         try:
             # Creamos una función anidada (callback) para despachar la señal de la GUI
             def emit_progress(pct):
@@ -40,4 +40,4 @@ class ExtractorWorker(QThread):
             self.log_signal.emit(f"Error crítico en hilo de extracción: {e}")
             self.finished_signal.emit([])
         finally:
-            pythoncom.CoUninitialize()  # Limpiar COM al finalizar el hilo
+            pythoncom.CoUninitialize()
