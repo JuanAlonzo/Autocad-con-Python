@@ -31,6 +31,7 @@ class AppSettings:
         self.CAPA_DESTINO = "NUMERACION"
         self.ATRIBUTO_ETIQUETA = "000"
         self.ESCALA_BLOQUE = 2.0
+        self.PERFILES_NUMERACION = {}  # Se inicializa vacío para cargar desde JSON
 
     def load_from_file(self, filepath="settings.json"):
         """Carga las configuraciones desde un archivo JSON si existe."""
@@ -38,7 +39,6 @@ class AppSettings:
             try:
                 with open(filepath, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    # Sobrescribir los atributos existentes con los del JSON
                     for key, value in data.items():
                         if hasattr(self, key):
                             setattr(self, key, value)

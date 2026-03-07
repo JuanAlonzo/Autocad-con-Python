@@ -4,14 +4,11 @@ from .cad_manager import cad
 logger = logging.getLogger(__name__)
 
 
-def extract_blocks(
-    layer_name: str = None, layer_prefix: str = None, progress_callback=None
-) -> list:
+def extract_blocks(layer_name: str = None, progress_callback=None) -> list:
     """
     Extrae datos de bloques (INSERT) iterando sobre el ModelSpace con win32com.
     Opcionalmente filtra por capa.
     Devuelve una lista de diccionarios con la información y atributos.
-    Permite filtrar por capa exacta (layer_name) o por prefijo (layer_prefix).
     """
     if not cad.is_connected:
         logger.error("AutoCAD no está conectado.")
@@ -19,9 +16,7 @@ def extract_blocks(
 
     blocks_data = []
 
-    if layer_prefix:
-        logger.info(f"Escaneando bloques en capas que inicien con '{layer_prefix}'...")
-    elif layer_name:
+    if layer_name:
         logger.info(f"Escaneando bloques en la capa '{layer_name}'...")
     else:
         logger.info("Escaneando bloques en todas las capas...")
@@ -36,10 +31,6 @@ def extract_blocks(
 
             if obj.EntityName == "AcDbBlockReference":
                 if layer_name and obj.Layer.upper() != layer_name.upper():
-                    continue
-                if layer_prefix and not obj.Layer.upper().startswith(
-                    layer_prefix.upper()
-                ):
                     continue
 
                 # Extraer propiedades base

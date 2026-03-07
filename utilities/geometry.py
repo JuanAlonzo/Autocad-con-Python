@@ -181,3 +181,68 @@ def associate_data(base_blocks: list, data_entities: list, radius: float) -> lis
         f"Asociación exitosa: Se cruzó información en {associated_count} bloques."
     )
     return base_blocks
+
+
+def point_to_segment_projection(p: tuple, a: tuple, b: tuple) -> tuple:
+    """
+    Proyecta un punto p sobre el vector ab.
+    Retorna: ((proj_x, proj_y), distancia_perpendicular)
+    """
+    ax, ay = a
+    bx, by = b
+    px, py = p
+
+    abx, aby = bx - ax, by - ay
+    apx, apy = px - ax, py - ay
+
+    ab_len_sq = abx**2 + aby**2
+    if ab_len_sq == 0:
+        return a, calculate_distance(p, a)
+
+    # t representa el punto en el vector (0 es A, 1 es B)
+    t = (apx * abx + apy * aby) / ab_len_sq
+    t = max(0.0, min(1.0, t))  # Forzamos a que no se salga del segmento de recta
+
+    proj_x = ax + t * abx
+    proj_y = ay + t * aby
+
+    dist = calculate_distance(p, (proj_x, proj_y))
+    return (proj_x, proj_y), dist
+
+
+def split_segments_with_poles(
+    segmentos: list, postes: list, tolerancia: float = 1.0
+) -> list:
+    """
+    Cruza líneas con postes. Si un poste está sobre la línea, divide la arista $A \to B$
+    en $A \to Poste \to B$.
+    """
+    nuevos_segmentos = []
+
+    for p1, p2 in segmentos:
+        postes_en_segmento = []
+        for poste in postes:
+            coords_poste = (poste["X"], poste["Y"])
+            proj, dist = point_to_segment_projection(coords_poste, p1, p2)
+
+            # Si el poste pertenece a esta línea
+            if dist <= tolerancia:
+                dist_from_p1 = calculate_distance(p1, proj)
+                postes_en_segmento.append((dist_from_p1, proj))
+
+        if not postes_en_segmento:
+            nuevos_segmentos.append((p1, p2))
+        else:
+            # Ordenar las proyecciones para no cruzar los segmentos resultantes
+            postes_en_segmento.sort(key=lambda item: item[0])
+            punto_actual = p1
+            for _, proj in postes_en_segmento:
+                if (
+                    calculate_distance(punto_actual, proj) > 0.1
+                ):  # Evitar segmentos nulos
+                    nuevos_segmentos.append((punto_actual, proj))
+                punto_actual = proj
+            if calculate_distance(punto_actual, p2) > 0.1:
+                nuevos_segmentos.append((punto_actual, p2))
+
+    return nuevos_segmentos

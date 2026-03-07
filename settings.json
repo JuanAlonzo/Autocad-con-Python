@@ -1,5 +1,34 @@
 {
-    "LAYER_PREFIX_POSTES": "POSTE",
+    "PERFILES_NUMERACION": {
+        "EXISTENTES": {
+            "descripcion": "Numeración de Postes Existentes (Grafo DFS)",
+            "estrategia": "DFS",
+            "dict_red": {"red_existente": "CAT_LINEA DE RED EXISTENTE"},
+            "dict_postes": {
+                "POSTE_C_9": "Poste Concreto 9m",
+                "POSTE_C_115": "Poste Concreto 11.5m",
+                "POSTE_M_8": "Poste Madera 8m",
+                "POSTE_M_7": "Poste Madera 7m"
+            }
+        },
+        "PROYECTADOS": {
+            "descripcion": "Numeración de Postes Proyectados (Grafo DFS)",
+            "estrategia": "DFS",
+            "dict_red": {"red_proyectada": "CAT_LINEA DE RED PROYECTADA"},
+            "filtro_capa": "POSTE_C_9P",
+            "dict_postes": {
+                "POSTE_C_9P": "Poste Proyectado 9m"
+            }
+        },
+        "APOYO": {
+            "descripcion": "Postes Proyectados de Apoyo (Búsqueda Simple)",
+            "estrategia": "SIMPLE",
+            "filtro_capa": "POSTE_C_9PA",
+            "dict_postes": {
+                "POSTE_C_9P": "Poste Proyectado de Apoyo"
+            }
+        }
+    },
     "LAYER_NUMERACION": "NUMERACION_POSTES",
     "COLOR_NUMERACION": 6,
     "COLOR_NUMERACION_ESTRICTA": 5,
@@ -7,12 +36,12 @@
     "DEFAULT_LINEWEIGHT": -3,
     "TEXT_HEIGHT": 1.5,
     "CIRCLE_RADIUS": 2.0,
-    "TEXT_OFFSET_X": 0.0,
-    "TEXT_OFFSET_Y": 0.0,
     "DEFAULT_SEARCH_RADIUS": 5.0,
     "DEFAULT_ASSOCIATION_RADIUS": 5.0,
     "BLOQUE_A_INSERTAR": "UBICACION POSTES UTM",
     "CAPA_DESTINO": "NUMERACION",
     "ATRIBUTO_ETIQUETA": "000",
-    "ESCALA_BLOQUE": 2.0
+    "ESCALA_BLOQUE": 2.0,
+    "TEXT_OFFSET_X": 0.0,
+    "TEXT_OFFSET_Y": 0.0
 }
