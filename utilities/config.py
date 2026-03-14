@@ -12,10 +12,6 @@ logger = logging.getLogger(__name__)
 class AppSettings:
     def __init__(self):
         # Valores por defecto (Fallback)
-        self.LAYER_PREFIX_POSTES = "POSTE"
-        self.LAYER_NUMERACION = "NUMERACION_POSTES"
-        self.COLOR_NUMERACION = 6
-        self.COLOR_NUMERACION_ESTRICTA = 5
         self.COLOR_DEFAULT_LAYER = 7
         self.DEFAULT_LINEWEIGHT = -3
 

@@ -25,8 +25,15 @@ class NumeracionWorker(QThread):
         cad.connect()
         try:
             estrategia = self.cfg.get("estrategia", "DFS")
-            capa_destino = SETTINGS.CAPA_DESTINO
-            layers.ensure_layer(capa_destino, color=SETTINGS.COLOR_NUMERACION)
+
+            capa_destino = self.cfg.get("capa_destino")
+            color_destino = self.cfg.get("color_destino")
+
+            self.log_signal.emit(
+                f"Preparando capa de destino '{capa_destino}' con color {color_destino}..."
+            )
+
+            layers.ensure_layer(capa_destino, color=color_destino)
 
             # TOPOLOGÍA (DFS)
             if estrategia == "DFS":
