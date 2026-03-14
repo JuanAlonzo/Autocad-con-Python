@@ -2,6 +2,7 @@ import logging
 from utilities.cad_manager import cad
 from .extractor_ctrl import ExtractorController
 from .numeracion_ctrl import NumeracionController
+from .capas_ctrl import CapasController
 
 
 class MainController:
@@ -12,12 +13,14 @@ class MainController:
         # Instanciación de módulos desacoplados
         self.extractor = ExtractorController(self)
         self.numeracion = NumeracionController(self)
+        self.capas = CapasController(self)
 
     def set_view(self, view):
         self.view = view
         # Inyección de las sub-vistas específicas a cada controlador
         self.extractor.set_view(view.tab_extractor)
         self.numeracion.set_view(view.tab_numeracion)
+        self.capas.set_view(view.tab_capas)
 
     def log(self, msg: str):
         self.logger.info(msg)

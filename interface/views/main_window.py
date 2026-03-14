@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 from .tab_extractor import TabExtractor
 from .tab_numeracion import TabNumeracion
+from .tab_capas import TabCapas
 from .tab_logs import TabLogs
 
 if TYPE_CHECKING:
@@ -41,6 +42,9 @@ class MainWindow(QMainWindow):
 
         self.tab_numeracion = TabNumeracion(self.controller.numeracion)
         self.tabs.addTab(self.tab_numeracion, "Numeración de Postes")
+
+        self.tab_capas = TabCapas(self.controller.capas)
+        self.tabs.addTab(self.tab_capas, "Gestión de Capas")
 
         self.tab_logs = TabLogs()
         self.tabs.addTab(self.tab_logs, "Registro (Logs)")

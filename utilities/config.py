@@ -32,6 +32,18 @@ class AppSettings:
         self.ATRIBUTO_ETIQUETA = "000"
         self.ESCALA_BLOQUE = 2.0
         self.PERFILES_NUMERACION = {}  # Se inicializa vacío para cargar desde JSON
+        self.LAYER_COLORS = {
+            "1": "Rojo",
+            "2": "Amarillo",
+            "3": "Verde",
+            "4": "Cian",
+            "5": "Azul",
+            "6": "Magenta",
+            "7": "Blanco",
+            "8": "Gris Oscuro",
+            "9": "Gris Claro",
+            "256": "Negro",
+        }
 
     def load_from_file(self, filepath="settings.json"):
         """Carga las configuraciones desde un archivo JSON si existe."""
