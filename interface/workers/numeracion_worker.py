@@ -1,4 +1,5 @@
 import pythoncom
+import time
 from PySide6.QtCore import QThread, Signal
 from utilities.cad_manager import cad
 from utilities import geometry, entities, drawing, layers
@@ -14,14 +15,16 @@ class NumeracionWorker(QThread):
 
     progress_signal = Signal(int)
     log_signal = Signal(str)
-    finished_signal = Signal(bool)
+    finished_signal = Signal(dict)
 
     def __init__(self, config_ui):
         super().__init__()
         self.cfg = config_ui
+        self.reporte_generado = []
 
     def run(self):
         pythoncom.CoInitialize()
+        time.sleep(0.5)
         cad.connect()
         try:
             estrategia = self.cfg.get("estrategia", "DFS")
@@ -34,6 +37,21 @@ class NumeracionWorker(QThread):
             )
 
             layers.ensure_layer(capa_destino, color=color_destino)
+
+            capas_asoc = self.cfg.get("capas_asociacion", [])
+            datos_asociar = []
+            if capas_asoc:
+                self.log_signal.emit(
+                    f"Extrayendo datos de asociación desde la capa {capas_asoc}..."
+                )
+
+                for capa in capas_asoc:
+                    datos_asociar.extend(entities.extract_texts(layer_name=capa))
+                    datos_asociar.extend(entities.extract_blocks(layer_name=capa))
+
+                self.log_signal.emit(
+                    f"Se encontraron {len(datos_asociar)} entidades para asociación."
+                )
 
             # TOPOLOGÍA (DFS)
             if estrategia == "DFS":
@@ -85,6 +103,14 @@ class NumeracionWorker(QThread):
                 ruta_logica = grafo.dfs_traversal(nodo_raiz)
                 self.progress_signal.emit(60)
 
+                if datos_asociar:
+                    self.log_signal.emit("Cruzando datos espaciales en memoria...")
+                    postes_validos = geometry.associate_data(
+                        base_blocks=postes_validos,
+                        data_entities=datos_asociar,
+                        radius=self.cfg["radio_asociacion"],
+                    )
+
                 exitos = self._ejecutar_insercion_dfs(
                     ruta_logica, postes_validos, capa_destino
                 )
@@ -128,17 +154,35 @@ class NumeracionWorker(QThread):
                     key=lambda p: calculate_distance((p["X"], p["Y"]), punto_inicio),
                 )
 
+                if datos_asociar:
+                    self.log_signal.emit("Cruzando datos espaciales en memoria...")
+                    postes_validos = geometry.associate_data(
+                        base_blocks=postes_validos,
+                        data_entities=datos_asociar,
+                        radius=self.cfg["radio_asociacion"],
+                    )
+
                 exitos = self._ejecutar_insercion_secuencial(
                     postes_ordenados, capa_destino
                 )
 
             self.log_signal.emit(f"Inserción completa: {exitos} postes numerados.")
             self.progress_signal.emit(100)
-            self.finished_signal.emit(True)
+            self.finished_signal.emit(
+                {
+                    "success": True,
+                    "reporte": self.reporte_generado,
+                }
+            )
 
         except Exception as e:
             self.log_signal.emit(f"ERROR: {e}")
-            self.finished_signal.emit(False)
+            self.finished_signal.emit(
+                {
+                    "success": False,
+                    "reporte": self.reporte_generado,
+                }
+            )
 
         finally:
             pythoncom.CoUninitialize()
@@ -218,7 +262,7 @@ class NumeracionWorker(QThread):
     def _insertar_bloque(
         self, poste_datos: dict, numero: int, capa_destino: str
     ) -> bool:
-        return drawing.insert_block_with_attributes(
+        insercion_ok = drawing.insert_block_with_attributes(
             x=poste_datos["X"] + SETTINGS.TEXT_OFFSET_X,
             y=poste_datos["Y"] + SETTINGS.TEXT_OFFSET_Y,
             block_name=SETTINGS.BLOQUE_A_INSERTAR,
@@ -226,3 +270,10 @@ class NumeracionWorker(QThread):
             scale=SETTINGS.ESCALA_BLOQUE,
             attributes={SETTINGS.ATRIBUTO_ETIQUETA: str(numero)},
         )
+
+        if insercion_ok:
+            fila_reporte = poste_datos.copy()
+            fila_reporte["Número Asignado"] = numero
+            self.reporte_generado.append(fila_reporte)
+
+        return insercion_ok

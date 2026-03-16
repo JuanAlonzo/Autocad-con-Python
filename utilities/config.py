@@ -21,7 +21,7 @@ class AppSettings:
         self.TEXT_OFFSET_Y = 0.0
 
         self.DEFAULT_SEARCH_RADIUS = 5.0
-        self.DEFAULT_ASSOCIATION_RADIUS = 5.0
+        self.DEFAULT_ASSOCIATION_RADIUS = 15.0
 
         self.BLOQUE_A_INSERTAR = "UBICACION POSTES UTM"
         self.CAPA_DESTINO = "NUMERACION"

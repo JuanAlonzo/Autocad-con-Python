@@ -24,40 +24,47 @@ def extract_blocks(layer_name: str = None, progress_callback=None) -> list:
     try:
         total_objects = cad.msp.Count
         for i in range(total_objects):
-            obj = cad.msp.Item(i)
-
             if progress_callback and i % 100 == 0:
                 progress_callback(int((i / total_objects) * 100))
 
-            if obj.EntityName == "AcDbBlockReference":
-                if layer_name and obj.Layer.upper() != layer_name.upper():
-                    continue
+            try:
+                obj = cad.msp.Item(i)
+                entity_name = obj.EntityName
+            except Exception:
+                continue
 
-                # Extraer propiedades base
-                data = {
-                    "Handle": obj.Handle,
-                    "Nombre": obj.Name,
-                    "Capa": obj.Layer,
-                    "X": round(obj.InsertionPoint[0], 4),
-                    "Y": round(obj.InsertionPoint[1], 4),
-                    "Z": round(obj.InsertionPoint[2], 4),
-                    "Rotacion": round(obj.Rotation, 4),
-                }
-
-                # Manejo de Bloques Dinámicos (en EffectiveName)
+            if entity_name == "AcDbBlockReference":
                 try:
-                    data["Nombre"] = obj.EffectiveName
-                except AttributeError:
-                    pass  # Si no tiene la propiedad exacta, se queda con obj.Name
+                    if layer_name and obj.Layer.upper() != layer_name.upper():
+                        continue
 
-                # Extracción de Atributos
-                if obj.HasAttributes:
-                    for attrib in obj.GetAttributes():
-                        tag = attrib.TagString
-                        val = attrib.TextString
-                        data[f"Attr_{tag}"] = val
+                    # Extraer propiedades base
+                    data = {
+                        "Handle": obj.Handle,
+                        "Nombre": obj.Name,
+                        "Capa": obj.Layer,
+                        "X": round(obj.InsertionPoint[0], 4),
+                        "Y": round(obj.InsertionPoint[1], 4),
+                        "Z": round(obj.InsertionPoint[2], 4),
+                        "Rotacion": round(obj.Rotation, 4),
+                    }
 
-                blocks_data.append(data)
+                    # Manejo de Bloques Dinámicos (en EffectiveName)
+                    try:
+                        data["Nombre"] = obj.EffectiveName
+                    except AttributeError:
+                        pass  # Si no tiene la propiedad exacta, se queda con obj.Name
+
+                    # Extracción de Atributos
+                    if obj.HasAttributes:
+                        for attrib in obj.GetAttributes():
+                            tag = attrib.TagString
+                            val = attrib.TextString
+                            data[f"Attr_{tag}"] = val
+
+                    blocks_data.append(data)
+                except Exception:
+                    continue
 
         if progress_callback:
             progress_callback = 100
@@ -94,25 +101,32 @@ def extract_texts(
     try:
         total_objects = cad.msp.Count
         for i in range(total_objects):
-            obj = cad.msp.Item(i)
-
             if progress_callback and i % 100 == 0:
                 progress_callback(int((i / total_objects) * 100))
 
-            if obj.EntityName in valid_types:
-                if layer_name and obj.Layer.upper() != layer_name.upper():
-                    continue
+            try:
+                obj = cad.msp.Item(i)
+                entity_name = obj.EntityName
+            except Exception:
+                continue
 
-                data = {
-                    "Handle": obj.Handle,
-                    "Texto": obj.TextString,
-                    "Capa": obj.Layer,
-                    "X": round(obj.InsertionPoint[0], 4),
-                    "Y": round(obj.InsertionPoint[1], 4),
-                    "Z": round(obj.InsertionPoint[2], 4),
-                    "Tipo": obj.EntityName,
-                }
-                texts_data.append(data)
+            if entity_name in valid_types:
+                try:
+                    if layer_name and obj.Layer.upper() != layer_name.upper():
+                        continue
+
+                    data = {
+                        "Handle": obj.Handle,
+                        "Texto": obj.TextString,
+                        "Capa": obj.Layer,
+                        "X": round(obj.InsertionPoint[0], 4),
+                        "Y": round(obj.InsertionPoint[1], 4),
+                        "Z": round(obj.InsertionPoint[2], 4),
+                        "Tipo": entity_name,
+                    }
+                    texts_data.append(data)
+                except Exception:
+                    continue
 
         if progress_callback:
             progress_callback(100)
@@ -142,27 +156,38 @@ def extract_network_lines(layers_dict: dict):
     try:
         total_objects = cad.msp.Count
         for i in range(total_objects):
-            obj = cad.msp.Item(i)
-
-            if obj.Layer.upper() not in valid_layers:
+            try:
+                obj = cad.msp.Item(i)
+                entity_name = obj.EntityName
+                layer_name = obj.Layer
+            except Exception:
                 continue
 
-            # Si es una línea simple
-            if obj.EntityName == "AcDbLine":
-                p1 = (round(obj.StartPoint[0], 4), round(obj.StartPoint[1], 4))
-                p2 = (round(obj.EndPoint[0], 4), round(obj.EndPoint[1], 4))
-                segments.append((p1, p2))
+            if layer_name.upper() in valid_layers:
+                continue
 
-            # Si es una polilínea (Cable continuo)
-            elif obj.EntityName in ["AcDbPolyline", "AcDb2dPolyline"]:
-                coords = obj.Coordinates
-                step = 2 if obj.EntityName == "AcDbPolyline" else 3
-
-                # Iterar por los vértices para crear segmentos individuales
-                for j in range(0, len(coords) - step, step):
-                    p1 = (round(coords[j], 4), round(coords[j + 1], 4))
-                    p2 = (round(coords[j + step], 4), round(coords[j + step + 1], 4))
+            try:
+                # Si es una línea simple
+                if entity_name == "AcDbLine":
+                    p1 = (round(obj.StartPoint[0], 4), round(obj.StartPoint[1], 4))
+                    p2 = (round(obj.EndPoint[0], 4), round(obj.EndPoint[1], 4))
                     segments.append((p1, p2))
+
+                # Si es una polilínea (Cable continuo)
+                elif entity_name in ["AcDbPolyline", "AcDb2dPolyline"]:
+                    coords = obj.Coordinates
+                    step = 2 if entity_name == "AcDbPolyline" else 3
+
+                    # Iterar por los vértices para crear segmentos individuales
+                    for j in range(0, len(coords) - step, step):
+                        p1 = (round(coords[j], 4), round(coords[j + 1], 4))
+                        p2 = (
+                            round(coords[j + step], 4),
+                            round(coords[j + step + 1], 4),
+                        )
+                        segments.append((p1, p2))
+            except Exception:
+                continue
 
         logger.info(f"Se extrajeron {len(segments)} segmentos de red.")
     except Exception as e:

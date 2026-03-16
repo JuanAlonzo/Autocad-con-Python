@@ -1,3 +1,5 @@
+import csv
+from PySide6.QtWidgets import QFileDialog
 from utilities.cad_manager import cad
 from interface.workers.numeracion_worker import NumeracionWorker
 
@@ -80,9 +82,48 @@ class NumeracionController:
         self.worker.finished.connect(self.worker.deleteLater)
         self.worker.start()
 
-    def on_numeracion_finished(self, success: bool):
+    def on_numeracion_finished(self, resultado: dict):
         self.view.set_execution_state(is_running=False)
+
+        # Se extraen los datos enviados por el worker
+        success = resultado.get("success", False)
+        reporte_datos = resultado.get("reporte", [])
+
         if success:
             self.main.log("--- NUMERACIÓN COMPLETADA CON ÉXITO ---")
+            if reporte_datos:
+                self._exportar_reporte_csv(reporte_datos)
         else:
             self.main.log("--- LA NUMERACIÓN FINALIZÓ CON ERRORES ---")
+            if reporte_datos:
+                self.main.log(
+                    "Se generó un reporte parcial de la numeración. Intentando exportar..."
+                )
+                self._exportar_reporte_csv(reporte_datos)
+
+    def _exportar_reporte_csv(self, datos: list):
+        file_path, _ = QFileDialog.getSaveFileName(
+            self.view, "Guardar Reporte de Numeración", "", "CSV Files (*.csv)"
+        )
+
+        if not file_path:
+            self.main.log("Aviso: Guardado de reporte CSV omitido por el usuario.")
+            return
+
+        try:
+            # Recopilar cabeceras dinámicas (Handle, X, Y, Numero_Asignado, Data_Attr...)
+            headers = []
+            for row in datos:
+                for key in row.keys():
+                    if key not in headers:
+                        headers.append(key)
+
+            with open(file_path, mode="w", newline="", encoding="utf-8") as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=headers)
+                writer.writeheader()
+                for row in datos:
+                    writer.writerow(row)
+
+            self.main.log(f"Reporte CSV generado exitosamente en: {file_path}")
+        except Exception as e:
+            self.main.log(f"Error al generar reporte CSV: {e}")

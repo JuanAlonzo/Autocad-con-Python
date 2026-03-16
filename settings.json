@@ -5,6 +5,7 @@
             "estrategia": "DFS",
             "capa_destino": "NUM_POSTES_EXISTENTES",
             "color_destino": 6,
+            "capas_asociacion": ["CAT_COD_POSTE","CAT_COD_POSTE_PROPIO","CAT_OBS POSTE", "CAT_POSTE_NO_APTO_A_LIBERAR"],
             "dict_red": {"red_existente": "CAT_LINEA DE RED EXISTENTE"},
             "dict_postes": {
                 "POSTE_C_9": "Poste Concreto 9m",
@@ -18,6 +19,7 @@
             "estrategia": "DFS",
             "capa_destino": "NUM_POSTES_PROYECTADOS",
             "color_destino": 3,
+            "capas_asociacion": ["CAT_COD_POSTE_PROYECTADO"],
             "dict_red": {"red_proyectada": "CAT_LINEA DE RED PROYECTADA"},
             "filtro_capa": "POSTE_C_9P",
             "dict_postes": {
@@ -29,6 +31,7 @@
             "estrategia": "SIMPLE",
             "capa_destino": "NUM_POSTES_APOYO",
             "color_destino": 4,
+            "capas_asociacion": ["CAT_COD_POSTE_PROYECTADO_DE_APOYO"],
             "filtro_capa": "POSTE_C_9PA",
             "dict_postes": {
                 "POSTE_C_9P": "Poste Proyectado de Apoyo"
@@ -40,7 +43,7 @@
     "TEXT_HEIGHT": 1.5,
     "CIRCLE_RADIUS": 2.0,
     "DEFAULT_SEARCH_RADIUS": 5.0,
-    "DEFAULT_ASSOCIATION_RADIUS": 5.0,
+    "DEFAULT_ASSOCIATION_RADIUS": 15.0,
     "BLOQUE_A_INSERTAR": "UBICACION POSTES UTM",
     "CAPA_DESTINO": "NUMERACION",
     "COLOR_NUMERACION": 6,

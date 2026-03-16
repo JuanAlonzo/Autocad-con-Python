@@ -73,9 +73,9 @@ class TabNumeracion(QWidget):
             "dict_postes": perfil_data.get("dict_postes", {}),
             "filtro_capa": perfil_data.get("filtro_capa"),
             "capa_destino": perfil_data.get("capa_destino", SETTINGS.CAPA_DESTINO),
-            "color_destino": perfil_data.get(
-                "color_destino", SETTINGS.COLOR_NUMERACION
-            ),
+            "color_destino": perfil_data.get("color_destino", 7),
+            "capas_asociacion": perfil_data.get("capas_asociacion", []),
             "tolerancia_grafo": 0.1,
-            "radio_snap": 5.0,
+            "radio_snap": SETTINGS.DEFAULT_SEARCH_RADIUS,
+            "radio_asociacion": SETTINGS.DEFAULT_ASSOCIATION_RADIUS,
         }
